@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { HttpError, handle, json, participantId, pickProvider, readJson } from "../../server/lib.js";
+import { HttpError, handle, json, participantId, pickProvider, readJson, requireDb } from "../../server/lib.js";
 
 const MAX_CHARS = 60000;
 const MAX_OUTPUT = 4096;
@@ -125,6 +125,7 @@ function toMessages(input) {
 // IP manzil bo'yicha kunlik limit: bepul kvotani bir kishi tugatib qo'ymasligi uchun
 async function rateLimit(env, request) {
   if (!env.DB) return;
+  await requireDb(env);
   const limit = Number(env.AI_DAILY_LIMIT || 100);
   const key = request.headers.get("cf-connecting-ip") || "unknown";
   const day = new Date().toISOString().slice(0, 10);

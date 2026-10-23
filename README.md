@@ -47,29 +47,23 @@ Yangi metodika yoki treyning qo'shish uchun [`public/js/banks.js`](public/js/ban
 
 ## Cloudflare'ga joylash
 
-Platforma Cloudflare Pages'da ishlaydi: sahifa `public/` papkasida, server funksiyalari `functions/` papkasida, ma'lumotlar Cloudflare D1 bazasida saqlanadi.
+Platforma bitta Cloudflare Worker sifatida ishlaydi: sahifa `public/` papkasidan beriladi, `/api/*` so'rovlarini [`src/worker.js`](src/worker.js) qayta ishlaydi, ma'lumotlar Cloudflare D1 bazasida saqlanadi. D1 bazasi birinchi deploy'da avtomatik yaratiladi, jadvallarni server birinchi so'rovda o'zi tuzadi.
 
-### 1. Tayyorgarlik
+### GitHub orqali (tavsiya etiladi)
+1. Cloudflare panelida *Workers & Pages → Create → Import a repository* orqali shu repozitoriyni ulang. Deploy command: `npx wrangler deploy` (standart qiymat).
+2. Worker nomi [`wrangler.toml`](wrangler.toml) dagi `name` bilan bir xil bo'lishi kerak (hozir `pspro`). Agar panelda boshqa nom bergan bo'lsangiz, `name` qatorini o'sha nomga o'zgartiring.
+3. Worker sahifasida *Settings → Variables and Secrets → Add* orqali **Secret** turidagi `PSY_TOKEN` qo'shing — bu psixolog va tadqiqotchi kiradigan maxfiy kalit. Uzun tasodifiy satr tanlang, masalan `openssl rand -hex 24` buyrug'i bilan.
+4. *Deployments* bo'limida qayta deploy qiling (yoki `main` branchga yangi commit yuklang).
+
+Shundan keyin `main` branchga har bir push saytni avtomatik yangilaydi. Sayt `https://pspro.<hisobingiz>.workers.dev` ko'rinishidagi manzilda ochiladi.
+
+### Buyruq qatori orqali
 ```bash
 npm install
 npx wrangler login
+npm run deploy
+npx wrangler secret put PSY_TOKEN
 ```
-
-### 2. Ma'lumotlar bazasi
-```bash
-npx wrangler d1 create ruhai-db
-```
-Buyruq bergan `database_id` ni [`wrangler.toml`](wrangler.toml) faylidagi `database_id` qatoriga qo'ying, so'ng jadvallarni yarating:
-```bash
-npm run db:init
-```
-
-### 3. Loyiha va maxfiy kalit
-```bash
-npx wrangler pages project create ruhai --production-branch main
-npx wrangler pages secret put PSY_TOKEN --project-name ruhai
-```
-`PSY_TOKEN` — psixolog va tadqiqotchi kiradigan maxfiy kalit. Uzun tasodifiy satr tanlang, masalan `openssl rand -hex 24` buyrug'i bilan.
 
 ### AI provayderi (bepul variantlar)
 AI-suhbatdosh, kundalik tahlili va psixolog uchun AI xulosa quyidagi provayderlardan biri bilan ishlaydi. Provayder [`wrangler.toml`](wrangler.toml) dagi `AI_PROVIDER` qatorida tanlanadi.
@@ -77,20 +71,12 @@ AI-suhbatdosh, kundalik tahlili va psixolog uchun AI xulosa quyidagi provayderla
 | Provayder | Narxi | Nima kerak | Izoh |
 |---|---|---|---|
 | `workers-ai` (standart) | Bepul: kuniga 10 000 «neyron» | Hech narsa — Cloudflare hisobiga kiritilgan | Standart model `@cf/google/gemma-3-12b-it`. O'zbek tilida javob sifati o'rtacha |
-| `gemini` | Bepul tarif (daqiqalik va kunlik limit bilan) | [Google AI Studio](https://aistudio.google.com/apikey)da bepul kalit | O'zbek tilini yaxshiroq tushunadi. Kalitni kiriting: `npx wrangler pages secret put GEMINI_API_KEY --project-name ruhai` |
-| `anthropic` | Pullik | `ANTHROPIC_API_KEY` | Eng yuqori sifat |
+| `gemini` | Bepul tarif (daqiqalik va kunlik limit bilan) | [Google AI Studio](https://aistudio.google.com/apikey)da bepul kalit | O'zbek tilini yaxshiroq tushunadi. Kalitni `GEMINI_API_KEY` nomli Secret sifatida qo'shing |
+| `anthropic` | Pullik | `ANTHROPIC_API_KEY` Secret | Eng yuqori sifat |
 
 Bepul limit tugasa, platforma AI so'rovlariga «Bugungi limit tugadi» deb javob beradi; testlar, treyninglar va tadqiqotlar AI'siz ham to'liq ishlaydi.
 
 **Maxfiylik bo'yicha muhim eslatma.** Google'ning bepul tarif shartlariga ko'ra, bepul Gemini API'ga yuborilgan ma'lumotlar Google mahsulotlarini yaxshilash uchun ishlatilishi mumkin. Respondentlarning kundalik yozuvlari va suhbatlari sezgir psixologik ma'lumot bo'lgani uchun, haqiqiy tadqiqotda Workers AI yoki pullik tarifni tanlang yoki rozilik matnida buni respondentlarga aniq ayting.
-
-### 4. Joylash
-```bash
-npm run deploy
-```
-Sayt `https://ruhai.pages.dev` ko'rinishidagi manzilda ochiladi.
-
-**Muqobil yo'l (GitHub orqali avtomatik):** Cloudflare panelida *Workers & Pages → Create → Pages → Connect to Git* orqali shu repozitoriyni ulang. Build command bo'sh, build output directory `public`. *Settings → Bindings* bo'limida D1 bazasini `DB` nomi bilan va Workers AI'ni `AI` nomi bilan bog'lang, *Settings → Variables and Secrets* bo'limida `PSY_TOKEN` ni (Gemini ishlatsangiz `GEMINI_API_KEY` ni ham) kiriting. Shundan keyin `main` branchga har bir push saytni avtomatik yangilaydi.
 
 ### Sozlamalar
 | O'zgaruvchi | Vazifasi | Standart qiymat |
@@ -101,13 +87,14 @@ Sayt `https://ruhai.pages.dev` ko'rinishidagi manzilda ochiladi.
 | `ANTHROPIC_MODEL` | Claude modeli | `claude-opus-5-5` |
 | `AI_DAILY_LIMIT` | Bitta IP manzildan kunlik AI so'rovlari soni (bepul kvotani tejash) | `50` |
 
+Bu qiymatlar `wrangler.toml` da saqlanadi va har bir deploy'da qo'llanadi; ularni panelda emas, shu faylda o'zgartiring. Maxfiy kalitlar (`PSY_TOKEN`, `GEMINI_API_KEY`) esa panelda saqlanadi va deploy'da o'chmaydi.
+
 ### Mahalliy ishga tushirish
 ```bash
 cp .dev.vars.example .dev.vars   # kalitlarni kiriting
-npm run db:init:local
-npm run dev                      # http://localhost:8788
+npx wrangler login               # Workers AI har doim Cloudflare serverlarida ishlaydi
+npm run dev                      # http://localhost:8787
 ```
-Workers AI har doim Cloudflare serverlarida ishlaydi, shuning uchun mahalliy rejimda ham `npx wrangler login` qilingan bo'lishi kerak.
 
 ## Foydalanish tartibi
 

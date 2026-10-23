@@ -50,8 +50,22 @@ export async function requirePsychologist(request, env) {
   if (!(await isPsychologist(request, env))) throw new HttpError(401, "unauthorized");
 }
 
-export function requireDb(env) {
+// Jadvallar birinchi so'rovda avtomatik yaratiladi (schema.sql bilan bir xil)
+const SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS participants (id TEXT PRIMARY KEY, data TEXT NOT NULL, consent INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS idx_participants_consent ON participants (consent, updated_at)`,
+  `CREATE TABLE IF NOT EXISTS ai_usage (key TEXT NOT NULL, day TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (key, day))`,
+  `CREATE TABLE IF NOT EXISTS studies (id TEXT PRIMARY KEY, code TEXT NOT NULL UNIQUE, status TEXT NOT NULL, data TEXT NOT NULL, updated_at INTEGER NOT NULL)`,
+];
+let schemaReady = null;
+
+export async function requireDb(env) {
   if (!env.DB) throw new HttpError(503, "db_not_configured");
+  schemaReady ??= env.DB.batch(SCHEMA.map((sql) => env.DB.prepare(sql))).catch((e) => {
+    schemaReady = null;
+    throw e;
+  });
+  await schemaReady;
   return env.DB;
 }
 

@@ -1,7 +1,13 @@
-name = "ruhai"
-pages_build_output_dir = "public"
+# Worker nomi Cloudflare panelidagi Worker nomi bilan bir xil bo'lishi kerak
+name = "pspro"
+main = "src/worker.js"
 compatibility_date = "2025-09-01"
 compatibility_flags = ["nodejs_compat"]
+
+# public/ dagi sahifa va fayllar; /api/* so'rovlarini src/worker.js qayta ishlaydi
+[assets]
+directory = "./public"
+binding = "ASSETS"
 
 [vars]
 # AI provayderi: "workers-ai" (bepul, kalitsiz), "gemini" (bepul tarif, GEMINI_API_KEY),
@@ -16,8 +22,8 @@ AI_DAILY_LIMIT = "50"
 [ai]
 binding = "AI"
 
-# `npx wrangler d1 create ruhai-db` buyrug'i bergan database_id ni shu yerga qo'ying
+# D1 ma'lumotlar bazasi: database_id ko'rsatilmagan, shuning uchun birinchi deploy'da avtomatik yaratiladi.
+# Jadvallarni server birinchi so'rovda o'zi yaratadi.
 [[d1_databases]]
 binding = "DB"
 database_name = "ruhai-db"
-database_id = "00000000-0000-0000-0000-000000000000"
