@@ -1,0 +1,2116 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>RuhAI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: chap ustunda navigatsiya (telefonda yuqorida gorizontal), o'ngda bitta ish maydoni — har bir modul alohida ko'rinish */
+:root {
+  --bg: #F3F6F6;
+  --surface: #FFFFFF;
+  --ink: #15252B;
+  --muted: #5B6C72;
+  --line: #DCE4E5;
+  --accent: #2B6E74;
+  --accent-soft: #E1EEEF;
+  --accent-ink: #FFFFFF;
+  --ok: #3C8A5A;
+  --warn: #B7791F;
+  --crit: #B3413B;
+  --ok-soft: #E3F1E8;
+  --warn-soft: #F8EDD9;
+  --crit-soft: #F7E3E1;
+  --ctrl: #8A6FB0;
+  --f-display: "Unbounded", "Onest", system-ui, sans-serif;
+  --f-body: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F181B; --surface: #162327; --ink: #E4ECED; --muted: #93A5AA; --line: #2A3A3F;
+    --accent: #6FB7BC; --accent-soft: #1D3438; --accent-ink: #0F181B;
+    --ok: #6CC28D; --warn: #E2AE5C; --crit: #EE8079; --ok-soft: #1B3326; --warn-soft: #382C17; --crit-soft: #3A1F1D;
+    --ctrl: #B9A2DC; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F181B; --surface: #162327; --ink: #E4ECED; --muted: #93A5AA; --line: #2A3A3F;
+  --accent: #6FB7BC; --accent-soft: #1D3438; --accent-ink: #0F181B;
+  --ok: #6CC28D; --warn: #E2AE5C; --crit: #EE8079; --ok-soft: #1B3326; --warn-soft: #382C17; --crit-soft: #3A1F1D;
+  --ctrl: #B9A2DC; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.25; }
+h2 { font-size: 1.45rem; font-weight: 700; }
+h3 { font-size: 1.05rem; font-weight: 600; }
+p { margin: 0; }
+button, input, textarea, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { display: grid; grid-template-columns: 236px 1fr; min-height: 100vh; }
+.side { border-right: 1px solid var(--line); padding-block: 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; display: flex; flex-direction: column; gap: 28px; position: sticky; top: 0; height: 100vh; }
+.brand { display: flex; flex-direction: column; gap: 4px; }
+.logo { font-family: var(--f-display); font-weight: 700; font-size: 1.4rem; letter-spacing: -0.01em; }
+.logo span { color: var(--accent); }
+.tag { font-size: 0.78rem; color: var(--muted); }
+nav { display: flex; flex-direction: column; gap: 2px; }
+.navbtn { text-align: left; background: none; border: 0; padding: 9px 12px; border-radius: 8px; cursor: pointer; color: var(--muted); font-weight: 500; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.navbtn:hover { background: var(--accent-soft); color: var(--ink); }
+.navbtn[aria-current="page"] { background: var(--accent-soft); color: var(--ink); font-weight: 600; }
+.navbtn small { font-family: var(--f-mono); font-size: 0.68rem; color: var(--muted); }
+.role { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 10px 12px 4px; }
+.side-foot { margin-top: auto; font-size: 0.75rem; color: var(--muted); line-height: 1.45; }
+
+main { padding-block: 32px 64px; padding-left: 40px; padding-right: max(16px, env(safe-area-inset-right, 0px)); min-width: 0; }
+.view { max-width: 980px; display: flex; flex-direction: column; gap: 22px; }
+.head { display: flex; flex-direction: column; gap: 6px; max-width: 68ch; }
+.eyebrow { font-family: var(--f-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
+.lead { color: var(--muted); }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.note { font-size: 0.82rem; color: var(--muted); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 500; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; padding: 3px; background: var(--surface); }
+.seg button { border: 0; background: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-weight: 500; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+.chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.chip.ok { background: var(--ok-soft); color: var(--ok); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.crit { background: var(--crit-soft); color: var(--crit); }
+.chip.neutral { background: var(--accent-soft); color: var(--accent); }
+
+/* Testlar */
+.q { display: grid; grid-template-columns: 28px 1fr; gap: 4px 10px; padding-block: 14px; border-top: 1px solid var(--line); }
+.q:first-child { border-top: 0; padding-top: 0; }
+.qn { font-family: var(--f-mono); color: var(--muted); font-size: 0.85rem; padding-top: 1px; }
+.opts { grid-column: 2; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 6px; }
+.opt { position: relative; }
+.opt input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.opt span { display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; font-size: 0.8rem; line-height: 1.3; height: 100%; }
+.opt span b { font-family: var(--f-mono); font-weight: 500; color: var(--muted); font-size: 0.72rem; }
+.opt input:checked + span { border-color: var(--accent); background: var(--accent-soft); }
+.opt input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 1px; }
+.scale { display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px; }
+.scale div { flex: var(--w); }
+.scale-wrap { position: relative; padding-top: 18px; }
+.marker { position: absolute; top: 0; transform: translateX(-50%); font-family: var(--f-mono); font-size: 0.75rem; font-weight: 500; }
+.marker::after { content: ""; display: block; width: 2px; height: 22px; background: var(--ink); margin: 2px auto 0; }
+.scale-labels { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 0.68rem; color: var(--muted); }
+.big { font-family: var(--f-display); font-size: 2.2rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.sos { border: 1px solid var(--crit); background: var(--crit-soft); border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+.sos h3 { color: var(--crit); }
+.history { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.history td, .history th { padding: 7px 8px; border-top: 1px solid var(--line); text-align: left; }
+.history th { font-weight: 600; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; border-top: 0; }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+/* Kundalik */
+textarea { width: 100%; min-height: 120px; resize: vertical; border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: var(--bg); line-height: 1.5; }
+.analysis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.metric { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 10px; background: var(--bg); min-width: 0; }
+.metric .label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.metric .val { font-weight: 600; }
+.valence { height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--crit), var(--line) 50%, var(--ok)); position: relative; margin-top: 6px; }
+.valence i { position: absolute; top: -4px; width: 4px; height: 16px; border-radius: 2px; background: var(--ink); transform: translateX(-50%); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tagi { font-size: 0.78rem; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--line); }
+.entries { display: flex; flex-direction: column; gap: 10px; }
+.entry { border-top: 1px solid var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.entry .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 0.75rem; color: var(--muted); }
+
+/* Suhbat */
+.chat { display: flex; flex-direction: column; gap: 12px; height: min(60vh, 560px); overflow-y: auto; padding: 4px 2px; }
+.msg { max-width: 78%; padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.bot { background: var(--bg); border: 1px solid var(--line); border-bottom-left-radius: 4px; align-self: flex-start; }
+.msg.me { background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 4px; align-self: flex-end; }
+.msg.sys { align-self: stretch; max-width: none; background: var(--crit-soft); color: var(--crit); border: 1px solid var(--crit); font-size: 0.88rem; }
+.composer { display: flex; gap: 8px; }
+.composer textarea { min-height: 46px; height: 46px; flex: 1; }
+.quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.quick button { border: 1px dashed var(--line); background: none; border-radius: 999px; padding: 4px 12px; font-size: 0.8rem; cursor: pointer; color: var(--muted); }
+.quick button:hover { border-color: var(--accent); color: var(--ink); }
+
+/* Panel */
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+.kpi .label { font-size: 0.75rem; color: var(--muted); }
+.kpi .v { font-family: var(--f-display); font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.kpi .s { font-size: 0.75rem; color: var(--muted); }
+.tablewrap { overflow-x: auto; }
+.students { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 620px; }
+.students th { text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600; padding: 6px 10px; }
+.students td { padding: 9px 10px; border-top: 1px solid var(--line); vertical-align: middle; }
+.students tr.risk td:first-child { box-shadow: inset 3px 0 0 var(--crit); }
+.legend { display: flex; gap: 16px; font-size: 0.8rem; color: var(--muted); flex-wrap: wrap; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.chartbox svg { width: 100%; height: auto; display: block; }
+.sample-badge { font-family: var(--f-mono); font-size: 0.7rem; border: 1px solid var(--warn); color: var(--warn); border-radius: 6px; padding: 1px 7px; align-self: flex-start; }
+
+/* Tadqiqot */
+.design { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.phase { border-top: 3px solid var(--accent); padding-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.phase b { font-family: var(--f-mono); font-size: 0.8rem; color: var(--accent); }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted); }
+.field input { border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: var(--bg); width: 120px; }
+pre.csv { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px; font-family: var(--f-mono); font-size: 0.78rem; max-height: 260px; overflow: auto; margin: 0; }
+
+/* Ishtirok, panel tafsilotlari, nafas mashqi */
+.statusline { font-size: 0.78rem; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+.dot.on { background: var(--ok); }
+.code { font-family: var(--f-mono); font-weight: 500; color: var(--ink); }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: 0.88rem; cursor: pointer; }
+.check input { margin-top: 4px; accent-color: var(--accent); width: 16px; height: 16px; flex: none; }
+.check input:disabled + span { opacity: 0.55; }
+.students tbody tr[data-id] { cursor: pointer; }
+.students tbody tr[data-id]:hover td, .students tbody tr.sel td { background: var(--accent-soft); }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.detail-grid > div { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+h4 { margin: 0; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
+.breath { display: flex; flex-direction: column; align-items: center; gap: 14px; padding-block: 6px; }
+.orb-wrap { width: 180px; height: 180px; display: grid; place-items: center; border-radius: 50%; border: 1px dashed var(--line); }
+.orb { width: 170px; height: 170px; border-radius: 50%; background: radial-gradient(circle at 38% 32%, var(--accent-soft), var(--accent) 75%); transform: scale(.55); transition: transform 1s ease-in-out; display: grid; place-items: center; }
+.orb span { font-family: var(--f-mono); font-size: 1.3rem; font-weight: 500; color: var(--accent-ink); }
+.mini svg { width: 100%; height: auto; display: block; }
+@media (prefers-reduced-motion: reduce) { .orb { transition: none !important; } }
+@media (max-width: 720px) { .detail-grid { grid-template-columns: 1fr; } }
+
+/* Ishonch shkalasi, kunlik holat, statistika, AI xulosa */
+.opts.five { grid-template-columns: repeat(5, 1fr); }
+.checkin { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.slider { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted); }
+.slider input[type=range] { width: 100%; accent-color: var(--accent); }
+.slider output { font-family: var(--f-mono); font-size: 1.4rem; color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+.verdict { padding: 12px 14px; border-radius: 10px; display: flex; flex-direction: column; gap: 4px; }
+.verdict.ok { background: var(--ok-soft); } .verdict.warn { background: var(--warn-soft); }
+.verdict b { font-size: 0.95rem; }
+.formula { font-family: var(--f-mono); font-size: 0.85rem; }
+.ai-summary { white-space: pre-wrap; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-wrap: anywhere; }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.stat-grid > div { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+@media (max-width: 720px) { .stat-grid { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .opts.five { grid-template-columns: repeat(3, 1fr); } .checkin { grid-template-columns: 1fr 1fr; } .checkin .slider:first-child { grid-column: 1 / -1; } }
+
+/* Tadqiqot platformasi: banklar, konstruktor, topshiriqlar */
+.q { margin: 0; padding-inline: 0; min-width: 0; border-width: 1px 0 0; border-style: solid; border-color: var(--line); }
+.q:first-child { border-top-width: 0; }
+.q legend { display: contents; }
+.opts[data-n="3"] { grid-template-columns: repeat(3, 1fr); }
+.opts[data-n="5"] { grid-template-columns: repeat(5, 1fr); }
+.opts[data-n="6"] { grid-template-columns: repeat(6, 1fr); }
+.opts[data-n="7"] { grid-template-columns: repeat(7, 1fr); }
+select, .inp { border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: var(--bg); color: var(--ink); font: inherit; }
+.field input, .field select, .field textarea { width: 100%; }
+.field textarea { min-height: 64px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+.form-grid .wide { grid-column: 1 / -1; }
+.stack { display: flex; flex-direction: column; gap: 22px; }
+.inst-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.inst-group { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.tr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 6px 12px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.tcard { text-align: left; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; cursor: pointer; color: inherit; font: inherit; min-width: 0; }
+.tcard:hover { border-color: var(--accent); }
+.seg.wrap { flex-wrap: wrap; }
+.tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.task { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-block: 8px; border-top: 1px solid var(--line); }
+.task > span:first-child { min-width: 0; }
+.task.done > span:first-child { color: var(--muted); }
+.wave { display: flex; flex-direction: column; gap: 6px; padding-top: 4px; }
+.wave-row .inp:first-child { flex: 1; min-width: 160px; }
+.wave-head { text-align: left; color: var(--accent); }
+.btn.small { padding: 4px 10px; font-size: 0.82rem; }
+.btn.danger { color: var(--crit); border-color: var(--crit); }
+.btn.ghost { border-style: dashed; color: var(--muted); }
+.consent-text { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 0.88rem; max-height: 220px; overflow: auto; }
+.arm { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
+.check.small { font-size: 0.8rem; gap: 6px; }
+.check.small input { margin-top: 2px; width: 14px; height: 14px; }
+.steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.checklist { display: flex; flex-direction: column; gap: 10px; }
+details.bank-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+details.bank-card summary { cursor: pointer; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; list-style: none; }
+details.bank-card summary::-webkit-details-marker { display: none; }
+details.bank-card[open] summary { margin-bottom: 10px; }
+.bank-body { display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem; }
+.bank-body ol, .bank-body ul { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 3px; }
+#bankList > h4 { margin-top: 6px; }
+#studyExport details { display: flex; flex-direction: column; gap: 8px; }
+#studyExport summary { cursor: pointer; padding-block: 4px; }
+.corr td, .corr th { text-align: center; }
+.tablewrap.tall { max-height: 520px; overflow: auto; }
+.tablewrap.tall thead th { position: sticky; top: 0; background: var(--surface); }
+@media (max-width: 720px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .opts[data-n="5"], .opts[data-n="6"], .opts[data-n="7"] { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side, nav { min-width: 0; }
+  .side { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding-block: 14px; padding-right: max(16px, env(safe-area-inset-right, 0px)); gap: 12px; }
+  nav { flex-direction: row; overflow-x: auto; gap: 4px; }
+  .navbtn { white-space: nowrap; }
+  .navbtn small, .role, .side-foot { display: none; }
+  main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-block: 22px 48px; }
+  .kpis { grid-template-columns: repeat(2, 1fr); }
+  .design { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .opts { grid-template-columns: repeat(2, 1fr); }
+  .msg { max-width: 90%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .msg { animation: rise .25s ease-out; }
+  @keyframes rise { from { transform: translateY(4px); opacity: .6; } to { transform: none; opacity: 1; } }
+}
+</style>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo">Ruh<span>AI</span></div>
+      <div class="tag">Psixologik tadqiqotlar platformasi</div>
+    </div>
+    <nav id="nav" aria-label="Modullar">
+      <div class="role">Respondent</div>
+      <button class="navbtn" data-view="tadqiqotlarim">Tadqiqotlarim</button>
+      <button class="navbtn" data-view="testlar">Testlar <small>11 shkala</small></button>
+      <button class="navbtn" data-view="treyninglar">Treyninglar <small>12 mashq</small></button>
+      <button class="navbtn" data-view="kundalik">Kundalik <small>NLP</small></button>
+      <button class="navbtn" data-view="suhbat">Suhbatdosh <small>KXT</small></button>
+      <div class="role">Psixolog va tadqiqotchi</div>
+      <button class="navbtn" data-view="tadqiqotlar">Tadqiqotlar</button>
+      <button class="navbtn" data-view="bank">Instrumentlar banki</button>
+      <button class="navbtn" data-view="panel">Psixolog paneli</button>
+      <button class="navbtn" data-view="tadqiqot">Gipotezalar <small>H2 · H3</small></button>
+    </nav>
+    <div class="side-foot">RuhAI tashxis qo'ymaydi va psixologni almashtirmaydi. Shoshilinch holatda: <b>103</b> (tez yordam) yoki <b>112</b>.</div>
+  </aside>
+
+  <main>
+    <!-- TADQIQOTLARIM (respondent) -->
+    <section class="view" id="v-tadqiqotlarim" hidden>
+      <div class="head">
+        <div class="eyebrow">Respondent · Tadqiqotlarda ishtirok</div>
+        <h2>Mening tadqiqotlarim</h2>
+        <p class="lead">Tadqiqotchidan olgan kod orqali tadqiqotga qo'shiling. O'lchovlar belgilangan kunlarda ochiladi, tayinlangan treyninglar shu yerda ko'rinadi.</p>
+      </div>
+      <form class="panel" id="joinForm">
+        <h3>Tadqiqotga qo'shilish</h3>
+        <div class="row" style="align-items: flex-end;">
+          <label class="field" for="joinCode" style="width: 220px;">Tadqiqot kodi<input id="joinCode" class="inp num" maxlength="12" autocomplete="off" placeholder="Masalan, K7M2QX" style="text-transform: uppercase;"></label>
+          <button class="btn primary" type="submit">Topish</button>
+        </div>
+        <p class="note" id="joinStatus"></p>
+      </form>
+      <div class="panel" id="joinInfo" hidden></div>
+      <p class="note" id="studiesOffline" hidden>Tadqiqotlarda ishtirok etish uchun platforma server bilan ishlashi kerak (Cloudflare yoki claude.ai).</p>
+      <div class="panel" id="taskRunner" hidden></div>
+      <div class="stack" id="myStudies"></div>
+    </section>
+
+    <!-- TREYNINGLAR -->
+    <section class="view" id="v-treyninglar" hidden>
+      <div class="head">
+        <div class="eyebrow">Treyninglar banki</div>
+        <h2>Psixologik mashqlar</h2>
+        <p class="lead">Dalillarga asoslangan qisqa mashqlar. Har bir mashqdan oldin va keyin kayfiyatingizni belgilang: bu ma'lumot mashq samarasini baholashga yordam beradi.</p>
+      </div>
+      <div class="seg wrap" id="tCats" role="group" aria-label="Turkum"></div>
+      <div class="panel" id="tRunner" hidden></div>
+      <div class="cards" id="tList"></div>
+      <div class="panel" id="tHistory" hidden>
+        <h3>Bajarilgan mashqlar</h3>
+        <div class="tablewrap"><table class="history"><thead><tr><th>Sana</th><th>Mashq</th><th>Kayfiyat: oldin → keyin</th></tr></thead><tbody id="tHistBody"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- TADQIQOTLAR (tadqiqotchi) -->
+    <section class="view" id="v-tadqiqotlar" hidden>
+      <div class="head">
+        <div class="eyebrow">Tadqiqotchi · Tadqiqotlarni boshqarish</div>
+        <h2>Tadqiqotlar</h2>
+        <p class="lead">Banklardan kerakli metodikalar va treyninglarni tanlab tadqiqot tuzing, respondentlarni kod orqali taklif qiling, ularning ishtirokini kuzating va natijalarni tahlil qiling.</p>
+      </div>
+      <div class="panel" id="rsGate" hidden><p id="rsGateText"></p><div><button type="button" class="btn" id="rsDemo">Namuna tadqiqotni ko'rish</button></div></div>
+      <div class="panel" id="rsList" hidden>
+        <div class="row" style="justify-content: space-between;"><h3>Tadqiqotlar ro'yxati</h3><div class="row"><button type="button" class="btn" id="rsDemo2">Namuna</button><button type="button" class="btn primary" id="rsNew">Yangi tadqiqot</button></div></div>
+        <div class="tablewrap"><table class="students"><thead><tr><th>Nomi</th><th>Holati</th><th>Kod</th><th>Respondentlar</th><th>Metodikalar</th><th>O'lchovlar</th></tr></thead><tbody id="rsBody"></tbody></table></div>
+      </div>
+      <div class="panel" id="studyEditor" hidden></div>
+      <div class="stack" id="studyDetail" hidden></div>
+    </section>
+
+    <!-- INSTRUMENTLAR BANKI -->
+    <section class="view" id="v-bank" hidden>
+      <div class="head">
+        <div class="eyebrow">Instrumentlar banki</div>
+        <h2>Metodikalar va treyninglar</h2>
+        <p class="lead">Har bir metodika uchun savollar, javob shkalasi, hisoblash qoidasi, talqin chegaralari, manba va foydalanish shartlari. O'zbekcha matnlar ishchi tarjima: tadqiqotda qo'llashdan oldin teskari tarjima va validatsiya talab etiladi.</p>
+      </div>
+      <div class="seg" role="group" aria-label="Bank bo'limi"><button type="button" id="bankTabI" aria-pressed="true">Psixodiagnostik metodikalar</button><button type="button" id="bankTabT" aria-pressed="false">Treyninglar</button></div>
+      <div class="stack" id="bankList" style="gap: 10px;"></div>
+    </section>
+
+    <!-- TESTLAR -->
+    <section class="view" id="v-testlar" hidden>
+      <div class="head">
+        <div class="eyebrow">Psixodiagnostika · o'z-o'zini baholash</div>
+        <h2>Psixoemotsional holatni baholash</h2>
+        <p class="lead" id="testLead">Oxirgi 2 hafta davomida quyidagi holatlar sizni qanchalik tez-tez bezovta qildi? Har bir savolga bitta javob tanlang.</p>
+      </div>
+      <div class="panel" id="consentCard">
+        <div class="row" style="justify-content: space-between;">
+          <h3>Tadqiqotda ishtirok</h3>
+          <span class="statusline"><span class="dot" id="syncDot"></span><span id="syncText">Ulanmoqda…</span></span>
+        </div>
+        <p class="note">Anonim kodingiz: <span class="code" id="myCode">—</span> · guruh: <b id="myGroup">—</b>. Psixolog ismingizni emas, faqat shu kodni ko'radi.</p>
+        <label class="check" for="consent"><input type="checkbox" id="consent" disabled><span>Test natijalarim (shu paytgacha topshirganlarim ham) va kundalik tahlili ko'rsatkichlarini universitet psixologi bilan anonim ulashishga roziman. Rozilikni istalgan vaqtda bekor qilsam, yuborilgan ma'lumotlar o'chiriladi.</span></label>
+        <label class="check" for="shareText"><input type="checkbox" id="shareText" disabled><span>Kundalik matnining o'zini ham ulashaman (ixtiyoriy).</span></label>
+      </div>
+      <div class="row" style="align-items: flex-end;">
+        <label class="field" for="instSelect" style="min-width: min(100%, 340px);">Metodika<select id="instSelect"></select></label>
+        <span class="note" id="instMeta"></span>
+      </div>
+      <form class="panel" id="testform">
+        <div id="questions"></div>
+        <div class="row" style="justify-content: space-between;">
+          <span class="note" id="progress">0 / 9 javob berildi</span>
+          <button type="submit" class="btn primary" id="submitTest" disabled>Natijani hisoblash</button>
+        </div>
+      </form>
+      <div id="result"></div>
+      <div class="panel" id="historyPanel" hidden>
+        <h3>Natijalaringiz tarixi</h3>
+        <div class="tablewrap"><table class="history"><thead><tr><th>Sana</th><th>Shkala</th><th>Ball</th><th>Daraja</th></tr></thead><tbody id="historyBody"></tbody></table></div>
+        <div class="mini" id="trend"></div>
+        <p class="note" id="histNote">Natijalar faqat shu brauzerda saqlanadi.</p>
+      </div>
+      <p class="note">Metodikalarning manbalari va foydalanish shartlari «Instrumentlar banki» bo'limida. O'zbekcha matnlar ishchi tarjima bo'lib, validatsiya qilinishi kerak.</p>
+    </section>
+
+    <!-- KUNDALIK -->
+    <section class="view" id="v-kundalik" hidden>
+      <div class="head">
+        <div class="eyebrow">2-modul · Kundalik va matn tahlili</div>
+        <h2>Bugun o'zingizni qanday his qilyapsiz?</h2>
+        <p class="lead">Bir necha gap yozing. AI matndagi emotsional ohangni, kognitiv buzilish belgilarini va xavf darajasini aniqlaydi. Aynan shu lingvistik belgilar H1 gipotezani tekshirish uchun ma'lumot bo'ladi.</p>
+      </div>
+      <div class="panel">
+        <div class="row" style="justify-content: space-between;"><h3>Kunlik holat</h3><span class="note" id="checkinStatus">Har kuni 10 soniya: kayfiyat, stress va uyqu</span></div>
+        <div class="checkin">
+          <label class="slider" for="mood">Kayfiyat (1 juda yomon, 10 a'lo)<output id="moodOut">6</output><input type="range" id="mood" min="1" max="10" value="6"></label>
+          <label class="slider" for="stress">Stress darajasi (1–10)<output id="stressOut">5</output><input type="range" id="stress" min="1" max="10" value="5"></label>
+          <label class="slider" for="sleep">Uyqu, soat<output id="sleepOut">7</output><input type="range" id="sleep" min="0" max="12" step="0.5" value="7"></label>
+        </div>
+        <div class="mini" id="moodTrend"></div>
+        <div class="row" style="justify-content: flex-end;"><button class="btn primary" id="saveCheckin">Bugungi holatni qayd etish</button></div>
+      </div>
+      <div class="panel">
+        <label for="diary" class="note">Kundalik yozuvi</label>
+        <textarea id="diary">Bugun imtihondan keyin juda charchadim. Hamma narsani yana buzib qo'ydim, deb o'ylayman, ota-onam mendan umid qilishadi. Lekin kechqurun do'stim bilan gaplashib, biroz yengil tortdim.</textarea>
+        <div class="row" style="justify-content: space-between;">
+          <span class="note" id="diaryStatus">Namuna matn kiritilgan. O'zingiz yozib, tahlil qiling.</span>
+          <div class="row">
+            <button class="btn" id="saveDiary">Saqlash</button>
+            <button class="btn primary" id="analyze">Tahlil qilish</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel" id="analysisPanel" hidden>
+        <div class="row" style="justify-content: space-between;"><h3>Tahlil natijasi</h3><span class="note" id="analysisSource"></span></div>
+        <div class="analysis" id="analysis"></div>
+        <p id="analysisNote"></p>
+      </div>
+      <div class="panel" id="entriesPanel" hidden>
+        <h3>Saqlangan yozuvlar</h3>
+        <div class="entries" id="entries"></div>
+      </div>
+    </section>
+
+    <!-- SUHBAT -->
+    <section class="view" id="v-suhbat" hidden>
+      <div class="head">
+        <div class="eyebrow">3-modul · AI-suhbatdosh</div>
+        <h2>Qo'llab-quvvatlovchi suhbat</h2>
+        <p class="lead">Kognitiv-xulqiy terapiya tamoyillariga asoslangan o'zbek tilidagi suhbatdosh. Xavf belgilari aniqlansa, suhbat to'xtatilmasdan yordam manbalari ko'rsatiladi.</p>
+      </div>
+      <div class="panel">
+        <div class="chat" id="chat" aria-live="polite"></div>
+        <div class="quick" id="quick">
+          <button>Imtihon oldidan xavotirdaman</button>
+          <button>Nafas mashqini o'rgating</button>
+          <button>Salbiy fikrlarimni qayta baholashga yordam bering</button>
+          <button>Kayfiyatim tushkun</button>
+        </div>
+        <form class="composer" id="composer">
+          <textarea id="msg" placeholder="Xabaringizni yozing…" aria-label="Xabar"></textarea>
+          <button class="btn primary" id="send">Yuborish</button>
+          <button type="button" class="btn" id="stop" hidden>To'xtatish</button>
+        </form>
+        <p class="note" id="chatNote">Suhbat sizning Claude hisobingiz orqali ishlaydi; birinchi xabarda ruxsat so'raladi. Suhbat hech qayerda saqlanmaydi.</p>
+      </div>
+      <div class="panel">
+        <div class="row" style="justify-content: space-between;"><h3>4-7-8 nafas mashqi</h3><span class="note">3 sikl · taxminan 1 daqiqa</span></div>
+        <div class="breath">
+          <div class="orb-wrap"><div class="orb" id="orb"><span id="orbText">Tayyor</span></div></div>
+          <p class="note" id="breathHint" style="text-align:center;max-width:46ch">4 soniya burun orqali nafas oling, 7 soniya ushlab turing, 8 soniya og'iz orqali sekin chiqaring.</p>
+          <button class="btn primary" id="breathBtn">Boshlash</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANEL -->
+    <section class="view" id="v-panel" hidden>
+      <div class="head">
+        <div class="eyebrow">5-modul · Psixolog paneli</div>
+        <h2>Guruh monitoringi</h2>
+        <p class="lead">Psixolog talabalar holatining dinamikasini kuzatadi va xavf ostidagilarni birinchi navbatda ko'radi. Ismlar o'rniga anonim kodlar ishlatiladi.</p>
+      </div>
+      <div class="row" style="justify-content: space-between;">
+        <span class="sample-badge" id="panelBadge">NAMUNA MA'LUMOTLAR · gipotetik, haqiqiy talabalar emas</span>
+        <div class="seg" role="group" aria-label="Ma'lumot manbasi" id="srcSeg" hidden><button id="srcReal" aria-pressed="false">Haqiqiy</button><button id="srcDemo" aria-pressed="true">Namuna</button></div>
+      </div>
+      <p class="note" id="panelInfo"></p>
+      <form class="row" id="psyLogin" hidden style="align-items: flex-end;">
+        <label class="field" for="psyToken">Psixolog kaliti<input id="psyToken" type="password" autocomplete="current-password" style="width: 240px;"></label>
+        <button class="btn primary" type="submit">Kirish</button>
+        <span class="note" id="psyLoginNote"></span>
+      </form>
+      <div class="row" id="psyLogout" hidden><span class="note">Siz psixolog sifatida kirgansiz.</span><button class="btn" type="button" id="psyLogoutBtn">Chiqish</button></div>
+      <div class="kpis" id="kpis"></div>
+      <div class="panel chartbox">
+        <div class="row" style="justify-content: space-between;">
+          <h3>O'rtacha PHQ-9 balli, 8 hafta</h3>
+          <div class="legend"><span><i style="background: var(--accent)"></i>Eksperimental (RuhAI)</span><span><i style="background: var(--ctrl)"></i>Nazorat</span></div>
+        </div>
+        <div id="chart"></div>
+        <p class="note" id="chartNote"></p>
+      </div>
+      <div class="panel">
+        <div class="row" style="justify-content: space-between;"><h3>Talabalar</h3><span class="note">Xavf darajasi bo'yicha saralangan</span></div>
+        <div class="tablewrap"><table class="students"><thead><tr><th>Kod</th><th>Guruh</th><th>PHQ-9</th><th>GAD-7</th><th>Dinamika (PHQ-9)</th><th>Kayfiyat · 7 kun</th><th>Holat</th></tr></thead><tbody id="studentsBody"></tbody></table></div>
+      </div>
+      <div class="panel" id="detail" hidden></div>
+    </section>
+
+    <!-- TADQIQOT -->
+    <section class="view" id="v-tadqiqot" hidden>
+      <div class="head">
+        <div class="eyebrow">6-modul · Tadqiqotchi</div>
+        <h2>Eksperiment dizayni va randomizatsiya</h2>
+        <p class="lead">Randomizatsiyalangan nazorat guruhli tadqiqot: ishtirokchilar tasodifiy ravishda RuhAI va nazorat guruhlariga taqsimlanadi, o'lchovlar uch nuqtada olinadi.</p>
+      </div>
+      <div class="panel">
+        <div class="design">
+          <div class="phase"><b>T0 · 0-hafta</b><h3>Boshlang'ich o'lchov</h3><p class="note">PHQ-9, GAD-7, AI'ga ishonch shkalasi, demografiya. Rozilik shakli.</p></div>
+          <div class="phase"><b>T1 · 4-hafta</b><h3>Oraliq o'lchov</h3><p class="note">PHQ-9, GAD-7. Platformadan foydalanish ko'rsatkichlari (sessiyalar soni, kundalik yozuvlari).</p></div>
+          <div class="phase"><b>T2 · 8-hafta</b><h3>Yakuniy o'lchov</h3><p class="note">Barcha shkalalar qayta. Takroriy o'lchovlar ANOVA, moderatsiya tahlili (H3).</p></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Ishtirokchilarni taqsimlash</h3>
+        <div class="row" style="align-items: flex-end;">
+          <label class="field" for="nPart">Ishtirokchilar soni<input id="nPart" type="number" min="4" max="1000" value="240"></label>
+          <label class="field" for="seed">Seed (takrorlanuvchanlik)<input id="seed" type="number" value="2026"></label>
+          <label class="field" for="block">Blok hajmi<input id="block" type="number" min="2" step="2" value="4"></label>
+          <button class="btn primary" id="randomize">Taqsimlash</button>
+        </div>
+        <p class="note" id="randSummary"></p>
+        <pre class="csv" id="csv"></pre>
+        <div class="row"><button class="btn" id="copyCsv">CSV'ni nusxalash</button><span class="note" id="copyNote"></span></div>
+      </div>
+      <div class="panel" id="statsPanel">
+        <div class="row" style="justify-content: space-between;">
+          <h3>Gipotezalarni tekshirish</h3>
+          <div class="seg" role="group" aria-label="Statistika manbasi" id="statSeg" hidden><button id="statReal" aria-pressed="false">Haqiqiy</button><button id="statDemo" aria-pressed="true">Namuna</button></div>
+        </div>
+        <p class="note" id="statInfo"></p>
+        <div id="statBody"></div>
+      </div>
+      <div class="panel" id="exportPanel" hidden>
+        <div class="row" style="justify-content: space-between;"><h3>Yig'ilgan ma'lumotlar</h3><span class="note" id="exportInfo"></span></div>
+        <p class="note">Rozilik bergan talabalarning barcha o'lchovlari. SPSS yoki R'ga yuklash uchun nusxalang.</p>
+        <pre class="csv" id="exportCsv"></pre>
+        <div class="row"><button class="btn" id="copyExport">CSV'ni nusxalash</button><span class="note" id="copyExportNote"></span></div>
+      </div>
+      <div class="panel">
+        <h3>Etik talablar</h3>
+        <div class="tags">
+          <span class="tagi">Etika qo'mitasi ruxsati</span><span class="tagi">Xabardor qilingan rozilik</span><span class="tagi">Anonim kodlar</span><span class="tagi">Ma'lumotlarni shifrlash</span><span class="tagi">Xavf holatida psixologga yo'naltirish</span><span class="tagi">Istalgan vaqtda chiqib ketish huquqi</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="js/banks.js"></script>
+<script>
+(() => {
+const $ = (s, el = document) => el.querySelector(s);
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("ruhai." + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("ruhai." + k, JSON.stringify(v)); } catch {} }
+};
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmtDate = t => new Date(t).toLocaleDateString("uz-UZ", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+/* ---------- Navigatsiya ---------- */
+const views = ["tadqiqotlarim", "testlar", "treyninglar", "kundalik", "suhbat", "tadqiqotlar", "bank", "panel", "tadqiqot"];
+function show(v) {
+  if (!views.includes(v)) v = "tadqiqotlarim";
+  views.forEach(x => { $("#v-" + x).hidden = x !== v; });
+  document.querySelectorAll(".navbtn").forEach(b => { if (b.dataset.view === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+  try { history.replaceState(null, "", "#" + v); } catch {}
+}
+$("#nav").addEventListener("click", e => { const b = e.target.closest(".navbtn"); if (b) show(b.dataset.view); });
+// #join-KOD havolasi respondentni to'g'ridan-to'g'ri tadqiqotga qo'shilish oynasiga olib keladi
+const joinMatch = location.hash.match(/^#join-([A-Za-z0-9]{4,12})$/);
+show(joinMatch ? "tadqiqotlarim" : location.hash.slice(1));
+window.addEventListener("hashchange", () => { const v = location.hash.slice(1); if (views.includes(v)) show(v); });
+
+/* ---------- Instrumentlar banki va test dvigateli ---------- */
+const { INSTRUMENTS, TRAININGS } = window.RUHAI_BANKS;
+const TESTS = INSTRUMENTS;
+const DOMAINS = [...new Set(Object.values(INSTRUMENTS).map(t => t.domain))];
+const isForm = id => INSTRUMENTS[id]?.type === "form";
+const CLINICAL = new Set(["phq", "gad", "pss", "who5", "ucla3"]);
+const CLINICAL_ADVICE = {
+  ok: "Natija me'yor doirasida. Kundalik, treyninglar va suhbatdosh yordamida holatingizni kuzatib borishingiz mumkin.",
+  neutral: "Natija o'rtacha darajada. Treyninglar bankidagi mashqlar foydali bo'lishi mumkin.",
+  warn: "Belgilar o'rtacha darajada. Treyninglar bankidagi mashqlarni sinab ko'ring va universitet psixologi bilan maslahatlashishni o'ylab ko'ring.",
+  crit: "Belgilar yuqori darajada. Mutaxassis bilan uchrashish tavsiya etiladi. Bu tashxis emas, lekin e'tiborga olish kerak bo'lgan signal."
+};
+const TRUST_ADVICE = {
+  warn: "AI'ga ishonchingiz past. Bu tabiiy holat: savollaringizni psixologga ham bera olasiz.",
+  neutral: "AI'ga ishonchingiz o'rtacha darajada. Suhbatdoshni sinab ko'rib, keyinroq shkalani qayta to'ldirishingiz mumkin.",
+  ok: "AI'ga ishonchingiz yuqori. Shunga qaramay, jiddiy holatlarda doim mutaxassisga murojaat qiling."
+};
+const GENERAL_ADVICE = "Natija ma'lumot uchun. Batafsil talqinni psixolog bilan muhokama qilishingiz mumkin.";
+let cur = "phq";
+const scoreStep = t => t.scoring === "mean" ? 0.01 : 1;
+const fmtScore = (id, s) => s == null ? "—" : INSTRUMENTS[id]?.scoring === "mean" ? (+s).toFixed(2) : String(s);
+function band(id, s) {
+  const b = INSTRUMENTS[id].bands;
+  return b.find(x => s >= x[0] && s <= x[1]) || (s < b[0][0] ? b[0] : b[b.length - 1]);
+}
+// Teskari savollar hisobga olingan qiymatlar (ishonchlilik tahlili ham shularni ishlatadi)
+function itemValues(id, answers) {
+  const t = INSTRUMENTS[id], n = t.opts.length, rev = new Set(t.reverse || []);
+  return answers.map((v, i) => rev.has(i + 1) ? 2 * t.start + n - 1 - v : v);
+}
+function scoreInstrument(id, answers) {
+  const t = INSTRUMENTS[id], vals = itemValues(id, answers), r2 = x => Math.round(x * 100) / 100;
+  const sum = vals.reduce((s, v) => s + v, 0);
+  const score = t.scoring === "mean" ? r2(sum / vals.length) : sum;
+  const sub = t.subscales ? Object.fromEntries(Object.entries(t.subscales).map(([k, idx]) => [k, r2(idx.reduce((s, i) => s + vals[i - 1], 0) / idx.length)])) : null;
+  return { score, sub, sos: t.sosItem != null && answers[t.sosItem] > t.start };
+}
+function questionsHtml(id, prefix) {
+  const t = INSTRUMENTS[id];
+  if (t.type === "form") return `<div class="form-grid">${t.fields.map(f => `<label class="field" for="${prefix}${f.key}">${esc(f.label)}${f.type === "select"
+    ? `<select id="${prefix}${f.key}" name="${f.key}"><option value="">— tanlang —</option>${f.options.map(o => `<option>${esc(o)}</option>`).join("")}</select>`
+    : `<input class="inp" id="${prefix}${f.key}" name="${f.key}" type="${f.type === "number" ? "number" : "text"}"${f.min != null ? ` min="${f.min}" max="${f.max}"` : ""}>`}</label>`).join("")}</div>`;
+  return t.items.map((q, i) => `
+    <fieldset class="q">
+      <span class="qn">${i + 1}.</span><legend>${esc(q)}</legend>
+      <div class="opts" data-n="${t.opts.length}">${t.opts.map((o, k) => { const v = t.start + k; return `
+        <label class="opt"><input type="radio" id="${prefix}${i}-${v}" name="${prefix}q${i}" value="${v}"><span><b>${v}</b>${esc(o)}</span></label>`; }).join("")}
+      </div>
+    </fieldset>`).join("");
+}
+function readAnswers(id, root, prefix) {
+  const t = INSTRUMENTS[id];
+  if (t.type === "form") {
+    const o = {};
+    t.fields.forEach(f => { const el = root.querySelector(`[name="${f.key}"]`); o[f.key] = !el ? "" : f.type === "number" && el.value !== "" ? +el.value : el.value.trim(); });
+    return o;
+  }
+  return t.items.map((_, i) => { const c = root.querySelector(`input[name="${prefix}q${i}"]:checked`); return c ? +c.value : null; });
+}
+const answeredCount = (id, a) => isForm(id) ? Object.values(a).filter(v => v !== "").length : a.filter(x => x !== null).length;
+const totalCount = id => isForm(id) ? INSTRUMENTS[id].fields.length : INSTRUMENTS[id].items.length;
+// Anketa (forma) qisman to'ldirilishi mumkin, shkalalarda barcha savolga javob kerak
+const isComplete = (id, a) => isForm(id) || answeredCount(id, a) === totalCount(id);
+
+function scaleHtml(id, score) {
+  const T = INSTRUMENTS[id], st = scoreStep(T), colors = { ok: "var(--ok)", warn: "var(--warn)", crit: "var(--crit)", neutral: "var(--accent)" };
+  const segs = T.bands.map((b, i) => {
+    const hi = i < T.bands.length - 1 ? T.bands[i + 1][0] : T.max + st;
+    return `<div style="--w:${hi - b[0]};background:${colors[b[3]]};opacity:${score >= b[0] && score <= b[1] ? 1 : .35}"></div>`;
+  }).join("");
+  const pct = Math.max(0, Math.min(100, (score - T.min + st / 2) / (T.max - T.min + st) * 100));
+  return `<div class="scale-wrap"><div class="marker" style="left:${pct}%">${fmtScore(id, score)}</div><div class="scale">${segs}</div></div>
+    <div class="scale-labels">${T.bands.map(b => `<span>${b[0]}–${b[1]}</span>`).join("")}</div>`;
+}
+function resultHtml(id, res) {
+  const T = INSTRUMENTS[id], b = band(id, res.score);
+  const advice = id === "trust" ? TRUST_ADVICE[b[3]] : CLINICAL.has(id) ? CLINICAL_ADVICE[b[3]] : GENERAL_ADVICE;
+  const sub = res.sub ? `<div class="tags">${Object.entries(res.sub).map(([k, v]) => `<span class="tagi">${esc(k)}: <b class="num">${v.toFixed(2)}</b></span>`).join("")}</div>` : "";
+  return `<div class="panel">
+    <div class="row" style="justify-content:space-between;align-items:flex-end;">
+      <div><div class="note">${esc(T.name)} natijasi</div><div class="big">${fmtScore(id, res.score)}<span class="note" style="font-size:1rem;font-family:var(--f-body)"> / ${T.max}</span></div></div>
+      <span class="chip ${b[3]}">${esc(b[2])}</span>
+    </div>${scaleHtml(id, res.score)}${sub}<p>${advice}</p>${T.note ? `<p class="note">${esc(T.note)}</p>` : ""}</div>${res.sos ? SOS_HTML : ""}`;
+}
+const SOS_HTML = `<div class="sos"><h3>Siz yolg'iz emassiz</h3><p>Javoblaringizda o'zingizga zarar yetkazish haqidagi fikrlar qayd etildi. Iltimos, bugunoq ishonchli inson yoki mutaxassis bilan gaplashing.</p>
+  <p><b>103</b> — tez tibbiy yordam · <b>112</b> — favqulodda xizmat · universitetingiz psixologi</p>
+  <p class="note">Rozilik bergan yoki tadqiqotda ishtirok etayotgan bo'lsangiz, psixolog xavf signalini ko'radi.</p></div>`;
+
+// Testlar bo'limi: bankdagi istalgan shkala bilan o'z-o'zini baholash
+$("#instSelect").innerHTML = DOMAINS.map(d => {
+  const ids = Object.keys(INSTRUMENTS).filter(id => INSTRUMENTS[id].domain === d && !isForm(id));
+  return ids.length ? `<optgroup label="${esc(d)}">${ids.map(id => `<option value="${id}">${esc(INSTRUMENTS[id].name)} · ${esc(INSTRUMENTS[id].full)}</option>`).join("")}</optgroup>` : "";
+}).join("");
+function renderTest() {
+  const t = INSTRUMENTS[cur];
+  $("#instSelect").value = cur;
+  $("#testLead").textContent = t.lead + " Har bir savolga bitta javob tanlang.";
+  $("#instMeta").textContent = `${t.items.length} savol · taxminan ${t.minutes} daqiqa`;
+  $("#questions").innerHTML = questionsHtml(cur, "self-");
+  $("#result").innerHTML = "";
+  updateProgress();
+}
+function updateProgress() {
+  const a = readAnswers(cur, $("#testform"), "self-"), n = answeredCount(cur, a);
+  $("#progress").textContent = `${n} / ${a.length} javob berildi`;
+  $("#submitTest").disabled = n < a.length;
+}
+$("#testform").addEventListener("change", updateProgress);
+$("#instSelect").addEventListener("change", e => { cur = e.target.value; renderTest(); });
+function openTest(id) { cur = id; renderTest(); show("testlar"); }
+
+$("#testform").addEventListener("submit", e => {
+  e.preventDefault();
+  const a = readAnswers(cur, $("#testform"), "self-"), res = scoreInstrument(cur, a);
+  const rec = { t: cur, score: res.score, date: Date.now(), sos: res.sos };
+  const hist = store.get("results", []); hist.unshift(rec); store.set("results", hist.slice(0, 100));
+  shareMine(d => { d.results.push(rec); d.results = d.results.slice(-100); });
+  $("#result").innerHTML = resultHtml(cur, res);
+  renderHistory();
+  $("#result").scrollIntoView({ behavior: "smooth", block: "nearest" });
+});
+function renderHistory() {
+  const h = store.get("results", []).filter(r => INSTRUMENTS[r.t]);
+  $("#historyPanel").hidden = !h.length;
+  $("#trend").innerHTML = h.filter(r => r.t === "phq" || r.t === "gad").length >= 2 ? trendSvg(h.slice(0, 12).reverse()) : "";
+  $("#historyBody").innerHTML = h.slice(0, 12).map(r => { const b = band(r.t, r.score); return `<tr><td class="num">${fmtDate(r.date)}</td><td>${esc(INSTRUMENTS[r.t].name)}</td><td class="num">${fmtScore(r.t, r.score)}</td><td><span class="chip ${b[3]}">${esc(b[2])}</span></td></tr>`; }).join("");
+}
+function trendSvg(list) {
+  const W = 560, H = 130, L = 26, R = 12, T = 10, B = 22, max = 27;
+  const x = i => L + i * (W - L - R) / Math.max(1, list.length - 1), y = v => T + (1 - v / max) * (H - T - B);
+  let g = "";
+  [0, 10, 20].forEach(v => { g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="10" fill="var(--muted)" font-family="JetBrains Mono, monospace">${v}</text>`; });
+  [["phq", "var(--accent)"], ["gad", "var(--ctrl)"]].forEach(([t, col]) => {
+    const pts = list.map((r, i) => [r, i]).filter(([r]) => r.t === t);
+    if (!pts.length) return;
+    g += `<path d="${pts.map(([r, i], k) => (k ? "L" : "M") + x(i).toFixed(1) + " " + y(r.score).toFixed(1)).join(" ")}" fill="none" stroke="${col}" stroke-width="2"/>`;
+    pts.forEach(([r, i]) => { g += `<circle cx="${x(i)}" cy="${y(r.score)}" r="3" fill="${col}"><title>${TESTS[t].name}: ${r.score}</title></circle>`; });
+  });
+  return `<div class="legend"><span><i style="background:var(--accent)"></i>PHQ-9</span><span><i style="background:var(--ctrl)"></i>GAD-7</span></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="PHQ-9 va GAD-7 natijalari dinamikasi">${g}</svg>`;
+}
+renderTest(); renderHistory();
+
+/* ---------- Cloudflare serveri (Pages Functions) ---------- */
+// backend: "claude" — claude.ai Artifact, "cf" — Cloudflare serveri, "local" — faqat brauzer
+let backend = "local", pidCache = null, apiPromise = null;
+const apiAvailable = () => (apiPromise ??= fetch("/api/health", { headers: { accept: "application/json" } })
+  .then(r => r.ok && (r.headers.get("content-type") || "").includes("json") ? r.json() : null).catch(() => null));
+function participantId() {
+  if (pidCache) return pidCache;
+  let id = store.get("pid", null);
+  if (!id) { id = crypto.randomUUID(); store.set("pid", id); }
+  return (pidCache = id);
+}
+const psyToken = () => store.get("psyToken", null);
+async function api(path, opts = {}) {
+  const headers = { "content-type": "application/json", "x-participant-id": participantId() };
+  const tok = psyToken(); if (tok) headers.authorization = "Bearer " + tok;
+  let r;
+  try { r = await fetch(path, { ...opts, headers }); }
+  catch (e) { throw { code: e?.name === "AbortError" ? "cancelled" : "unavailable" }; }
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw { code: r.status === 429 && body.error !== "daily_limit" ? "rate_limited" : body.error || "unavailable", status: r.status };
+  return body;
+}
+async function cfSample(input, opts = {}) {
+  const { text, truncated } = await api("/api/ai", { method: "POST", body: JSON.stringify({ input, tier: opts.modelTier || "default" }), signal: opts.signal });
+  opts.onText?.({ text, delta: text });
+  return { text, truncated: !!truncated };
+}
+cfSample.json = async (input, opts) => {
+  const { text } = await cfSample(input, opts);
+  const m = text.match(/\{[\s\S]*\}/);
+  try { return JSON.parse(m ? m[0] : text); } catch { throw { code: "bad_json" }; }
+};
+// claude.ai db/user imkoniyatlari bilan bir xil interfeys: sahifaning qolgan kodi ikkala muhitda bir xil ishlaydi
+function cfBackend() {
+  const pid = participantId();
+  const snap = (id, data) => ({ id, exists: data != null, data: () => data ?? undefined, metadata: { fromCache: false, hasPendingWrites: false } });
+  const poll = (fn, ms) => {
+    let stop = false;
+    const tick = () => { if (!stop && !document.hidden) fn(); };
+    fn(); const t = setInterval(tick, ms);
+    return () => { stop = true; clearInterval(t); };
+  };
+  const urlFor = path => {
+    const [col, id] = path.split("/");
+    if (col === "participants") return id === pid ? "/api/me" : "/api/panel/" + encodeURIComponent(id);
+    if (col === "studies") return "/api/studies/" + encodeURIComponent(id);
+    throw { code: "invalid_argument" };
+  };
+  const db = {
+    doc(path) {
+      const id = path.split("/")[1], url = urlFor(path);
+      return {
+        get: async () => snap(id, (await api(url)).data),
+        set: data => api(url, { method: "PUT", body: JSON.stringify(data) }),
+        update: data => api(url, { method: "PATCH", body: JSON.stringify(data) }),
+        delete: () => api(url, { method: "DELETE" }),
+        onSnapshot(next, err) { return poll(async () => { try { next(snap(id, (await api(url)).data)); } catch (e) { err?.(e); } }, 30000); }
+      };
+    },
+    collection(name) {
+      const url = name === "participants" ? "/api/panel" : name === "studies" ? "/api/studies" : null;
+      return {
+        onSnapshot(next, err) {
+          return poll(async () => {
+            try {
+              const { items } = await api(url);
+              next({ docs: items.map(p => snap(p.id, p.data)), size: items.length, empty: !items.length });
+            } catch (e) { err?.(e); }
+          }, 15000);
+        }
+      };
+    }
+  };
+  const user = {
+    id: async () => pid,
+    canEdit: async () => { if (!psyToken()) return false; try { await api("/api/auth", { method: "POST" }); return true; } catch { return false; } }
+  };
+  return { db, user };
+}
+
+/* ---------- Claude (sample) ---------- */
+let samplePromise = null;
+const getSample = () => (samplePromise ??= (window.claude?.use
+  ? window.claude.use("sample").catch(() => null)
+  : apiAvailable().then(h => h?.ai ? cfSample : null)));
+const errText = code => ({
+  not_granted: "AI funksiyasiga ruxsat berilmadi. Lug'atga asoslangan oddiy tahlil ishlatiladi.",
+  rate_limited: "So'rovlar ko'p bo'ldi. Bir daqiqadan so'ng qayta urinib ko'ring.",
+  cancelled: "To'xtatildi.",
+  daily_limit: "Bugungi AI so'rovlari limiti tugadi. Ertaga qayta urinib ko'ring.",
+  refused: "AI bu so'rovga javob bera olmadi.",
+  ai_not_configured: "AI serverda sozlanmagan.",
+  bad_json: "AI javobini o'qib bo'lmadi. Qayta urinib ko'ring."
+}[code] || "AI bilan bog'lanib bo'lmadi. Keyinroq qayta urinib ko'ring.");
+
+/* ---------- Xavf belgilari (lokal) ---------- */
+const norm = s => s.toLowerCase().replace(/[ʻʼ’‘`´]/g, "'");
+const RISK_RE = /o'zimni o'ldir|joniga qasd|o'z jonimga|yashagim kelma|yashashdan ma'no|o'lgim kel|o'lib qolsam|o'zimga zarar|hayotim(ning)? ma'nosi yo'q|yashashni xohlamay/;
+const hasRisk = s => RISK_RE.test(norm(s));
+
+/* ---------- Kundalik ---------- */
+const LEX = {
+  neg: ["charcha", "xafa", "g'amgin", "tushkun", "yolg'iz", "qo'rq", "xavotir", "asab", "yomon", "umidsiz", "yig'la", "jahl", "uyal", "aybdor", "stress", "bezovta", "og'ir", "zerik", "buzib"],
+  pos: ["xursand", "quvon", "yengil", "yaxshi", "tinch", "mamnun", "rahmat", "do'st", "kulib", "umid", "muvaffaq", "zavq", "ilhom"],
+  dist: { "Har doim / hech qachon (umumlashtirish)": ["har doim", "hech qachon", "hamma narsa", "hamma narsani", "hech kim", "doim"], "Majburiyat (\"kerak\" fikrlari)": ["shart", "kerak edi", "majbur"], "Fikrni o'qish": ["deb o'ylashadi", "mendan umid", "meni yomon ko'r"], "Falokatlashtirish": ["hammasi tugadi", "dahshat", "halokat", "endi tamom"] }
+};
+function localAnalyze(text) {
+  const t = norm(text);
+  const count = arr => arr.reduce((n, w) => n + (t.split(w).length - 1), 0);
+  const n = count(LEX.neg), p = count(LEX.pos);
+  const valence = (p - n) / Math.max(1, p + n);
+  const distortions = Object.entries(LEX.dist).filter(([, ws]) => ws.some(w => t.includes(w))).map(([k]) => k);
+  const emotions = [...LEX.neg, ...LEX.pos].filter(w => t.includes(w)).slice(0, 6);
+  return { valence, emotions, distortions, risk: hasRisk(text) ? "yuqori" : n >= 4 ? "o'rta" : "past",
+    summary: "Bu oddiy lug'atga asoslangan baho. To'liq tahlil uchun AI funksiyasiga ruxsat bering.", source: "Lug'at asosida" };
+}
+const ANALYZE_PROMPT = text => `Sen psixolingvistik tahlilchisan. Quyidagi o'zbek tilidagi talaba kundalik yozuvini tahlil qil. Tashxis qo'yma.
+Faqat JSON qaytar, shu ko'rinishda:
+{"valence": -1 dan 1 gacha son (emotsional ohang), "emotions": ["o'zbekcha emotsiya nomlari", ...ko'pi bilan 5], "distortions": ["aniqlangan kognitiv buzilishlar o'zbekcha nomi, masalan: umumlashtirish, fikrni o'qish, falokatlashtirish, o'zini ayblash, qora-oq fikrlash"], "risk": "past" | "o'rta" | "yuqori", "summary": "2-3 gapli iliq, qo'llab-quvvatlovchi izoh va bitta amaliy KXT tavsiyasi, o'zbek tilida"}
+"risk" faqat o'z joniga qasd, o'zga zarar yoki og'ir umidsizlik belgilari bo'lsa "yuqori" bo'ladi.
+
+Yozuv:
+"""${text}"""`;
+
+function renderAnalysis(r) {
+  const riskCls = { past: "ok", "o'rta": "warn", yuqori: "crit" }[r.risk] || "neutral";
+  const v = Math.max(-1, Math.min(1, +r.valence || 0));
+  $("#analysis").innerHTML = `
+    <div class="metric"><span class="label">Emotsional ohang</span><span class="val num">${v > 0 ? "+" : ""}${v.toFixed(2)}</span><div class="valence"><i style="left:${(v + 1) * 50}%"></i></div></div>
+    <div class="metric"><span class="label">Emotsiyalar</span><div class="tags">${(r.emotions || []).map(e => `<span class="tagi">${esc(e)}</span>`).join("") || "<span class='note'>aniqlanmadi</span>"}</div></div>
+    <div class="metric"><span class="label">Kognitiv buzilishlar</span><div class="tags">${(r.distortions || []).map(e => `<span class="tagi">${esc(e)}</span>`).join("") || "<span class='note'>aniqlanmadi</span>"}</div></div>
+    <div class="metric"><span class="label">Xavf darajasi</span><span><span class="chip ${riskCls}">${esc(r.risk)}</span></span></div>`;
+  $("#analysisNote").textContent = r.summary || "";
+  $("#analysisSource").textContent = r.source;
+  $("#analysisPanel").hidden = false;
+  const old = $("#analysisPanel .sos"); if (old) old.remove();
+  if (r.risk === "yuqori") $("#analysisPanel").insertAdjacentHTML("beforeend", SOS_HTML);
+}
+let lastAnalysis = null;
+$("#analyze").onclick = async () => {
+  const text = $("#diary").value.trim();
+  if (text.length < 10) { $("#diaryStatus").textContent = "Tahlil uchun kamida bir-ikki gap yozing."; return; }
+  const btn = $("#analyze"); btn.disabled = true;
+  $("#diaryStatus").textContent = "Tahlil qilinmoqda…";
+  let r = null;
+  const sample = await getSample();
+  if (sample) {
+    try {
+      const j = await sample.json(ANALYZE_PROMPT(text), { modelTier: "quick" });
+      r = { ...j, source: "AI tahlili" };
+      if (hasRisk(text)) r.risk = "yuqori";
+      $("#diaryStatus").textContent = "Tayyor.";
+    } catch (e) { $("#diaryStatus").textContent = errText(e.code); }
+  } else {
+    $("#diaryStatus").textContent = "AI mavjud emas. Lug'atga asoslangan tahlil ko'rsatildi.";
+  }
+  r ??= localAnalyze(text);
+  lastAnalysis = r; renderAnalysis(r); btn.disabled = false;
+};
+function renderEntries() {
+  const list = store.get("diary", []);
+  $("#entriesPanel").hidden = !list.length;
+  $("#entries").innerHTML = list.slice(0, 8).map(d => {
+    const cls = { past: "ok", "o'rta": "warn", yuqori: "crit" }[d.risk] || "neutral";
+    return `<div class="entry"><div class="meta"><span class="num">${fmtDate(d.date)}</span>${d.valence != null ? `<span class="num">ohang ${(+d.valence).toFixed(2)}</span>` : ""}${d.risk ? `<span class="chip ${cls}">${esc(d.risk)}</span>` : ""}</div><p>${esc(d.text)}</p></div>`;
+  }).join("");
+}
+$("#saveDiary").onclick = () => {
+  const text = $("#diary").value.trim(); if (!text) return;
+  const list = store.get("diary", []);
+  list.unshift({ text, date: Date.now(), valence: lastAnalysis?.valence ?? null, risk: lastAnalysis?.risk ?? null });
+  store.set("diary", list.slice(0, 100));
+  shareMine(d => {
+    d.diary.push({ date: Date.now(), valence: lastAnalysis?.valence ?? null, risk: lastAnalysis?.risk ?? null, emotions: lastAnalysis?.emotions || [], distortions: lastAnalysis?.distortions || [], ...(d.shareText ? { text } : {}) });
+    d.diary = d.diary.slice(-60);
+  });
+  $("#diaryStatus").textContent = "Yozuv saqlandi (faqat shu brauzerda).";
+  renderEntries();
+};
+renderEntries();
+
+["mood", "stress", "sleep"].forEach(k => $("#" + k).addEventListener("input", e => { $("#" + k + "Out").textContent = e.target.value; }));
+const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString();
+function moodSvg(list) {
+  const W = 560, H = 110, L = 24, R = 12, T = 8, B = 20;
+  const x = i => L + i * (W - L - R) / Math.max(1, list.length - 1), y = v => T + (1 - v / 10) * (H - T - B);
+  let g = "";
+  [0, 5, 10].forEach(v => { g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="10" fill="var(--muted)" font-family="JetBrains Mono, monospace">${v}</text>`; });
+  [["mood", "var(--accent)"], ["stress", "var(--warn)"]].forEach(([k, col]) => {
+    g += `<path d="${list.map((r, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(r[k]).toFixed(1)).join(" ")}" fill="none" stroke="${col}" stroke-width="2"/>`;
+    list.forEach((r, i) => { g += `<circle cx="${x(i)}" cy="${y(r[k])}" r="2.6" fill="${col}"><title>${fmtDate(r.date)}: ${r[k]}</title></circle>`; });
+  });
+  g += `<text x="${L}" y="${H - 4}" font-size="10" fill="var(--muted)" font-family="JetBrains Mono, monospace">${fmtDate(list[0].date)}</text><text x="${W - R}" y="${H - 4}" text-anchor="end" font-size="10" fill="var(--muted)" font-family="JetBrains Mono, monospace">${fmtDate(list[list.length - 1].date)}</text>`;
+  return `<div class="legend"><span><i style="background:var(--accent)"></i>Kayfiyat</span><span><i style="background:var(--warn)"></i>Stress</span></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Kunlik kayfiyat va stress dinamikasi">${g}</svg>`;
+}
+function renderCheckins() {
+  const list = store.get("checkins", []).slice(0, 14).reverse();
+  $("#moodTrend").innerHTML = list.length >= 2 ? moodSvg(list) : `<p class="note">Bir necha kun qayd etsangiz, kayfiyat va stress dinamikasi shu yerda chiziladi.</p>`;
+}
+$("#saveCheckin").onclick = () => {
+  const rec = { date: Date.now(), mood: +$("#mood").value, stress: +$("#stress").value, sleep: +$("#sleep").value };
+  const list = store.get("checkins", []);
+  if (list[0] && sameDay(list[0].date, rec.date)) list[0] = rec; else list.unshift(rec);
+  store.set("checkins", list.slice(0, 120));
+  shareMine(d => {
+    d.checkins ??= [];
+    const last = d.checkins[d.checkins.length - 1];
+    if (last && sameDay(last.date, rec.date)) d.checkins[d.checkins.length - 1] = rec; else d.checkins.push(rec);
+    d.checkins = d.checkins.slice(-90);
+  });
+  $("#checkinStatus").textContent = rec.mood <= 3 || rec.stress >= 8
+    ? "Qayd etildi. Bugun og'ir kun ekan: suhbatdosh yoki nafas mashqi yordam berishi mumkin."
+    : "Bugungi holat qayd etildi.";
+  renderCheckins();
+};
+renderCheckins();
+
+/* ---------- Suhbatdosh ---------- */
+const RULES = `Sen "RuhAI" — o'zbekistonlik talabalar uchun o'zbek tilida (lotin yozuvida) gaplashadigan psixologik qo'llab-quvvatlash suhbatdoshisan.
+Qoidalar:
+- Kognitiv-xulqiy terapiya (KXT) usullaridan foydalan: his-tuyg'uni aks ettirish, avtomatik fikrni aniqlash, dalillarni tekshirish, muqobil fikr topish, kichik amaliy qadam, nafas va grounding (5-4-3-2-1) mashqlari.
+- Iliq, hurmatli ("siz" deb) va qisqa javob ber: 2-5 gap, oxirida bitta ochiq savol.
+- O'zbek madaniyatini hisobga ol: oila, ota-ona kutishlari, hurmat, jamoatchilik fikri.
+- Tashxis qo'yma, dori tavsiya qilma, o'zingni psixolog deb ko'rsatma. Kerak bo'lsa mutaxassisga murojaat qilishni tavsiya et.
+- Agar foydalanuvchi o'z joniga qasd qilish, o'ziga yoki boshqaga zarar yetkazish haqida yozsa: avval xavfsizligi haqida ochiq so'ra, yolg'iz emasligini ayt, darhol ishonchli inson, universitet psixologi yoki 103 / 112 raqamlariga murojaat qilishni so'ra.
+- Markdown belgilari (**, #) ishlatma, oddiy matn yoz.
+Endi suhbat boshlanadi.`;
+const GREETING = "Assalomu alaykum! Men RuhAI, sizni tinglash va his-tuyg'ularingizni tushunishga yordam berish uchun shu yerdaman. Bugun xayolingizni nima band qilyapti?";
+let turns = [], chatCounted = false;
+let ctl = null;
+function addMsg(cls, text) {
+  const d = document.createElement("div"); d.className = "msg " + cls; d.textContent = text;
+  $("#chat").appendChild(d); $("#chat").scrollTop = $("#chat").scrollHeight; return d;
+}
+addMsg("bot", GREETING);
+async function send(text) {
+  text = text.trim(); if (!text || ctl) return;
+  addMsg("me", text); $("#msg").value = "";
+  if (hasRisk(text)) {
+    addMsg("sys", "Xabaringizda xavf belgilari aniqlandi. Agar hozir o'zingizga zarar yetkazish xavfi bo'lsa, darhol 103 yoki 112 raqamiga qo'ng'iroq qiling yoki yoningizdagi ishonchli insonga ayting. Agar rozilik bergan bo'lsangiz, psixologga anonim signal yuboriladi (suhbat matnisiz).");
+    shareMine(d => { d.riskEvents.push({ date: Date.now(), source: "suhbat" }); d.riskEvents = d.riskEvents.slice(-30); });
+  }
+  const sample = await getSample();
+  if (!sample) { addMsg("bot", "AI suhbatdosh hozir mavjud emas: server sozlanmagan yoki platforma oflayn rejimda ochilgan."); return; }
+  turns.push({ role: "user", content: text });
+  const bubble = addMsg("bot", "O'ylanmoqda…");
+  ctl = new AbortController(); $("#stop").hidden = false; $("#send").disabled = true;
+  try {
+    const input = [{ role: "user", content: RULES }, { role: "assistant", content: GREETING }, ...turns.slice(-12)];
+    const { text: ans } = await sample(input, { cache: false, signal: ctl.signal, modelTier: "quick",
+      onText: ({ text }) => { bubble.textContent = text; $("#chat").scrollTop = $("#chat").scrollHeight; } });
+    bubble.textContent = ans; turns.push({ role: "assistant", content: ans });
+    if (!chatCounted) { chatCounted = true; shareMine(d => { d.chatSessions = (d.chatSessions || 0) + 1; }); }
+  } catch (e) {
+    turns.pop();
+    bubble.textContent = e.text || errText(e.code);
+    if (e.code === "not_granted") $("#chatNote").textContent = "AI'ga ruxsat berilmagan. Sahifani qayta ochib, ruxsat bering.";
+  } finally { ctl = null; $("#stop").hidden = true; $("#send").disabled = false; }
+}
+$("#composer").addEventListener("submit", e => { e.preventDefault(); send($("#msg").value); });
+$("#msg").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send($("#msg").value); } });
+$("#stop").onclick = () => ctl?.abort();
+$("#quick").addEventListener("click", e => { if (e.target.tagName === "BUTTON") send(e.target.textContent); });
+
+/* ---------- Ma'lumotlar bazasi: ishtirok va rozilik ---------- */
+let db = null, user = null, me = null, myRef = null, myDoc = null, isPsy = false, writeChain = Promise.resolve();
+function hashId(id) { let h = 2166136261; for (const c of id) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+const codeFrom = id => "R-" + hashId(id).toString(36).toUpperCase().slice(-5).padStart(5, "0");
+const groupFrom = id => (hashId(id + ":guruh") % 2 ? "E" : "N");
+const groupName = g => g === "E" ? "Eksperimental" : g === "N" ? "Nazorat" : "—";
+function setSync(on, text) { $("#syncDot").classList.toggle("on", on); $("#syncText").textContent = text; }
+function syncConsentUI() {
+  const c = !!myDoc?.consent;
+  $("#consent").checked = c; $("#consent").disabled = !myRef;
+  $("#shareText").checked = !!myDoc?.shareText; $("#shareText").disabled = !c;
+  $("#histNote").textContent = c ? "Rozilik berilgan: yangi natijalar psixologga anonim kod bilan yuboriladi." : "Natijalar faqat shu brauzerda saqlanadi.";
+}
+// Bitta hujjatga yozuvlar navbat bilan, ketma-ket yuboriladi
+function shareMine(mutate) {
+  if (!myRef || !myDoc?.consent) return;
+  writeChain = writeChain.then(async () => {
+    const base = structuredClone(myDoc);
+    base.results ??= []; base.diary ??= []; base.riskEvents ??= [];
+    mutate(base); base.updatedAt = Date.now();
+    await myRef.set(base); myDoc = base;
+    setSync(true, "Psixologga yuborildi");
+  }).catch(e => setSync(false, "Yuborilmadi: " + (e?.code || "xato")));
+}
+$("#consent").addEventListener("change", e => {
+  if (!myRef) return;
+  const on = e.target.checked;
+  writeChain = writeChain.then(async () => {
+    const base = myDoc ? structuredClone(myDoc) : { code: codeFrom(me), group: groupFrom(me), createdAt: Date.now() };
+    base.consent = on; base.consentAt = Date.now(); base.updatedAt = Date.now();
+    if (on) {
+      base.results = base.results?.length ? base.results : store.get("results", []).slice(0, 60).reverse();
+      base.diary ??= []; base.riskEvents ??= [];
+    } else {
+      base.shareText = false; base.results = []; base.diary = []; base.riskEvents = [];
+    }
+    await myRef.set(base); myDoc = base; syncConsentUI();
+    setSync(true, on ? "Rozilik saqlandi" : "Rozilik bekor qilindi, yuborilgan ma'lumotlar o'chirildi");
+  }).catch(err => { e.target.checked = !on; setSync(false, "Saqlanmadi: " + (err?.code || "xato")); });
+});
+$("#shareText").addEventListener("change", e => { const v = e.target.checked; shareMine(d => { d.shareText = v; if (!v) d.diary.forEach(x => delete x.text); }); });
+
+async function initDb() {
+  const offline = msg => { db = null; setSync(false, msg); syncConsentUI(); renderPanel(); onBackendReady(); };
+  if (window.claude?.use) {
+    backend = "claude";
+    [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+  } else {
+    const health = await apiAvailable();
+    if (!health) return offline("Server ulanmagan · natijalar shu brauzerda");
+    backend = "cf";
+    $("#chatNote").textContent = health.ai ? "Suhbat platforma serveri orqali Claude AI bilan ishlaydi. Suhbat matni saqlanmaydi." : "AI suhbatdosh serverda hali sozlanmagan.";
+    if (!health.db) return offline("Serverda ma'lumotlar bazasi sozlanmagan · natijalar shu brauzerda");
+    ({ db, user } = cfBackend());
+  }
+  if (!db || !user) return offline("Ma'lumotlar bazasi mavjud emas · natijalar shu brauzerda");
+  me = await user.id();
+  if (!me) return offline("Tizimga kirilmagan · natijalar shu brauzerda");
+  isPsy = await user.canEdit();
+  if (backend === "cf") { $("#psyLogin").hidden = isPsy; $("#psyLogout").hidden = !isPsy; }
+  $("#myCode").textContent = codeFrom(me);
+  $("#myGroup").textContent = groupName(groupFrom(me));
+  myRef = db.doc("participants/" + me);
+  myRef.onSnapshot(s => {
+    const prevUpdated = myDoc?.updatedAt;
+    myDoc = s.exists ? s.data() : null; syncConsentUI();
+    if (myDoc?.updatedAt !== prevUpdated) renderMyStudies().then(renderTrainingList);
+  }, e => setSync(false, "Ulanish uzildi: " + e.code));
+  setSync(true, "Server bilan ulangan");
+  syncConsentUI();
+  if (isPsy) {
+    db.collection("participants").onSnapshot(s => {
+      // Har bir so'rovda ma'lumot o'zgarmagan bo'lsa, sahifani qayta chizmaymiz
+      const sig = s.docs.map(d => d.id + ":" + (d.data()?.updatedAt || 0)).join("|");
+      if (sig === participantsSig) return;
+      participantsSig = sig;
+      allParticipants = s.docs.map(d => ({ id: d.id, ...d.data() }));
+      participants = allParticipants.filter(p => p.consent);
+      if (selStudy && !selStudy.demo) renderStudyDetail();
+      if (isPsy) renderStudiesView();
+      if (!userPickedSrc && participants.length) panelSrc = "real";
+      if (!statPicked && realStudy().length >= 6) statSrc = "real";
+      renderPanel(); renderExport(); renderStats();
+    }, e => { $("#panelInfo").textContent = "Ma'lumotlarni o'qib bo'lmadi: " + e.code; });
+  }
+  renderPanel(); renderExport(); renderStats();
+  onBackendReady();
+}
+
+/* ---------- Psixolog paneli ---------- */
+const DEMO = [
+  ["T-017", "E", [16, 17, 15, 14, 13], 14, "kuzatuv"], ["T-042", "N", [18, 19, 20, 21, 22], 17, "xavf"],
+  ["T-008", "E", [12, 11, 9, 8, 7], 9, "yaxshilanish"], ["T-031", "N", [11, 12, 11, 12, 13], 12, "kuzatuv"],
+  ["T-055", "E", [14, 12, 11, 9, 8], 8, "yaxshilanish"], ["T-023", "E", [9, 9, 8, 6, 5], 6, "yaxshilanish"],
+  ["T-064", "N", [8, 8, 9, 8, 8], 7, "barqaror"], ["T-012", "E", [20, 18, 17, 15, 14], 13, "kuzatuv"],
+  ["T-049", "N", [6, 7, 6, 6, 5], 5, "barqaror"], ["T-036", "E", [7, 6, 5, 4, 4], 4, "yaxshilanish"]
+].map(([id, g, tr, gad, st], i) => ({ id, code: id, g, tr, phq: tr[tr.length - 1], gad, st, mood: [5.4, 3.1, 6.6, 5.2, 7.0, 7.3, 6.1, 4.6, 6.8, 7.7][i] }));
+const DEMO_E = [12.4, 11.8, 11.1, 10.2, 9.6, 9.0, 8.5, 8.1, 7.8], DEMO_C = [12.1, 12.0, 11.9, 11.7, 11.8, 11.5, 11.4, 11.3, 11.2];
+const statusCls = { xavf: "crit", kuzatuv: "warn", yaxshilanish: "ok", barqaror: "neutral" };
+const order = { xavf: 0, kuzatuv: 1, barqaror: 2, yaxshilanish: 3 };
+const WEEK = 7 * 864e5;
+let panelSrc = "demo", userPickedSrc = false, participants = [], selected = null;
+
+function spark(tr) {
+  if (!tr.length) return '<span class="note">—</span>';
+  if (tr.length === 1) tr = [tr[0], tr[0]];
+  const w = 110, h = 28, max = 27, step = w / (tr.length - 1);
+  const pts = tr.map((v, i) => [i * step, h - 3 - (v / max) * (h - 6)]);
+  const d = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+  const last = pts[pts.length - 1], up = tr[tr.length - 1] > tr[0];
+  const col = up ? "var(--crit)" : "var(--ok)";
+  return `<svg width="${w + 6}" height="${h}" viewBox="-3 0 ${w + 6} ${h}" aria-label="PHQ-9: ${tr.join(", ")}"><path d="${d} L${w} ${h} L0 ${h} Z" fill="${col}" opacity=".12"/><path d="${d}" fill="none" stroke="${col}" stroke-width="1.6"/><circle cx="${last[0]}" cy="${last[1]}" r="2.6" fill="${col}"/></svg>`;
+}
+function summarize(p) {
+  const res = p.results || [];
+  const phqs = res.filter(r => r.t === "phq"), gads = res.filter(r => r.t === "gad");
+  const tr = phqs.slice(-5).map(r => r.score);
+  const phq = phqs.length ? phqs[phqs.length - 1].score : null, gad = gads.length ? gads[gads.length - 1].score : null;
+  const riskDates = [...res.filter(r => r.sos).map(r => r.date), ...(p.diary || []).filter(d => d.risk === "yuqori").map(d => d.date), ...(p.riskEvents || []).map(e => e.date)];
+  const lastRisk = riskDates.length ? Math.max(...riskDates) : 0;
+  let st = "barqaror";
+  if (lastRisk && lastRisk > (p.reviewedAt || 0)) st = "xavf";
+  else if ((phq ?? 0) >= 10 || (gad ?? 0) >= 10) st = "kuzatuv";
+  else if (tr.length >= 2 && tr[0] - tr[tr.length - 1] >= 3) st = "yaxshilanish";
+  const recent = (p.checkins || []).filter(c => c.date > Date.now() - WEEK);
+  const mood = recent.length ? recent.reduce((a, c) => a + c.mood, 0) / recent.length : null;
+  return { id: p.id, code: p.code || "—", g: p.group, tr, phq, gad, st, lastRisk, mood };
+}
+// Har bir ishtirokchining PHQ-9 natijasi ro'yxatdan o'tgan kunidan boshlab haftalarga bo'linadi
+function weeklyMeans(list) {
+  const E = Array.from({ length: 9 }, () => []), C = Array.from({ length: 9 }, () => []);
+  list.forEach(p => (p.results || []).filter(r => r.t === "phq").forEach(r => {
+    const w = Math.min(8, Math.max(0, Math.floor((r.date - (p.createdAt || r.date)) / WEEK)));
+    (p.group === "E" ? E : C)[w].push(r.score);
+  }));
+  const m = a => a.map(x => x.length ? +(x.reduce((s, v) => s + v, 0) / x.length).toFixed(1) : null);
+  return [m(E), m(C)];
+}
+function drawChart(E, C) {
+  const W = 640, H = 240, L = 36, R = 16, T = 12, B = 30, ymax = Math.max(15, Math.ceil(Math.max(...E, ...C, 0) / 5) * 5);
+  const x = i => L + i * (W - L - R) / 8, y = v => T + (1 - v / ymax) * (H - T - B);
+  const line = arr => { let d = "", pen = false; arr.forEach((v, i) => { if (v == null) { pen = false; return; } d += (pen ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1); pen = true; }); return d; };
+  const lastIdx = arr => { for (let i = arr.length - 1; i >= 0; i--) if (arr[i] != null) return i; return -1; };
+  const mono = 'font-family="JetBrains Mono, monospace"';
+  let g = "";
+  for (let v = 0; v <= ymax; v += 5) g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)" ${mono}>${v}</text>`;
+  for (let i = 0; i <= 8; i += 2) g += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--muted)" ${mono}>${i}-hafta</text>`;
+  g += `<line x1="${x(4)}" x2="${x(4)}" y1="${T}" y2="${H - B}" stroke="var(--muted)" stroke-dasharray="3 4" opacity=".6"/><text x="${x(4) + 6}" y="${T + 10}" font-size="10" fill="var(--muted)">T1</text>`;
+  [[C, "var(--ctrl)", 2], [E, "var(--accent)", 2.4]].forEach(([arr, col, sw]) => {
+    g += `<path d="${line(arr)}" fill="none" stroke="${col}" stroke-width="${sw}"/>`;
+    arr.forEach((v, i) => { if (v != null) g += `<circle cx="${x(i)}" cy="${y(v)}" r="${i === lastIdx(arr) ? 4 : 2}" fill="${col}"/>`; });
+  });
+  const le = lastIdx(E), lc = lastIdx(C), eHigher = le >= 0 && lc >= 0 && E[le] > C[lc];
+  if (le >= 0) g += `<text x="${x(le) - 8}" y="${y(E[le]) + (eHigher ? -9 : 18)}" text-anchor="end" font-size="12" font-weight="600" fill="var(--accent)" ${mono}>${E[le]}</text>`;
+  if (lc >= 0) g += `<text x="${x(lc) - 8}" y="${y(C[lc]) + (eHigher ? 18 : -9)}" text-anchor="end" font-size="12" font-weight="600" fill="var(--ctrl)" ${mono}>${C[lc]}</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Guruhlar bo'yicha o'rtacha PHQ-9 balli haftalar kesimida">${g}</svg>`;
+}
+function renderPanel() {
+  const real = panelSrc === "real";
+  const rows = real ? participants.map(summarize) : DEMO;
+  $("#panelBadge").hidden = real;
+  $("#srcSeg").hidden = !isPsy;
+  $("#srcReal").setAttribute("aria-pressed", real); $("#srcDemo").setAttribute("aria-pressed", !real);
+  $("#panelInfo").textContent = !isPsy
+    ? (db ? (backend === "cf" ? "Haqiqiy ma'lumotlarni ko'rish uchun psixolog kaliti bilan kiring. Quyida namuna." : "Haqiqiy ma'lumotlarni faqat psixolog (artifaktda Editor huquqiga ega foydalanuvchi) ko'radi. Quyida namuna.") : "Ma'lumotlar bazasi ulanmagan. Quyida namuna.")
+    : real ? `${rows.length} ta talaba rozilik bergan. Ma'lumotlar real vaqtda yangilanadi. Batafsil ko'rish uchun qatorni bosing.`
+    : participants.length ? "Namuna rejimi. Haqiqiy ma'lumotlarga qaytish uchun «Haqiqiy» tugmasini bosing."
+    : (backend === "cf" ? "Hali hech bir talaba rozilik bermagan. Sayt manzilini talabalarga yuboring. Hozircha namuna ko'rsatilmoqda." : "Hali hech bir talaba rozilik bermagan. Havolani talabalarga Contributor huquqi bilan ulashing. Hozircha namuna ko'rsatilmoqda.");
+  const n = rows.length, withPhq = rows.filter(s => s.phq != null);
+  const e = rows.filter(s => s.g === "E").length;
+  const avg = withPhq.length ? (withPhq.reduce((a, s) => a + s.phq, 0) / withPhq.length).toFixed(1) : "—";
+  $("#kpis").innerHTML = [
+    ["Kuzatuvdagi talabalar", n, `eksperimental ${e} · nazorat ${n - e}`],
+    ["Ochiq xavf signali", rows.filter(s => s.st === "xavf").length, "ko'rib chiqilmagan"],
+    ["O'rtacha PHQ-9", avg, "oxirgi o'lchov"],
+    ["Yaxshilanganlar", rows.filter(s => s.tr.length >= 2 && s.tr[0] - s.tr[s.tr.length - 1] >= 3).length, "PHQ-9 kamida 3 ballga kamaygan"]
+  ].map(([l, v, s]) => `<div class="kpi"><span class="label">${l}</span><span class="v">${v}</span><span class="s">${s}</span></div>`).join("");
+  $("#studentsBody").innerHTML = rows.length ? [...rows].sort((a, b) => order[a.st] - order[b.st] || (b.phq ?? -1) - (a.phq ?? -1)).map(s => {
+    const pb = s.phq != null ? band("phq", s.phq) : null, gb = s.gad != null ? band("gad", s.gad) : null;
+    return `<tr data-id="${esc(s.id)}" class="${s.st === "xavf" ? "risk" : ""}${s.id === selected ? " sel" : ""}" tabindex="0"><td class="num">${esc(s.code)}</td><td>${groupName(s.g)}</td>
+      <td>${pb ? `<span class="num">${s.phq}</span> <span class="note">${pb[2].toLowerCase()}</span>` : "—"}</td>
+      <td>${gb ? `<span class="num">${s.gad}</span> <span class="note">${gb[2].toLowerCase()}</span>` : "—"}</td>
+      <td>${spark(s.tr)}</td><td>${s.mood != null ? `<span class="num">${s.mood.toFixed(1)}</span><span class="note"> / 10</span>` : "—"}</td><td><span class="chip ${statusCls[s.st]}">${s.st}</span></td></tr>`;
+  }).join("") : `<tr><td colspan="7" class="note">Hali ishtirokchilar yo'q.</td></tr>`;
+  const [E, C] = real ? weeklyMeans(participants) : [DEMO_E, DEMO_C];
+  const hasData = E.some(v => v != null) || C.some(v => v != null);
+  $("#chart").innerHTML = hasData ? drawChart(E, C) : `<p class="note">PHQ-9 natijalari kelib tushgach, grafik shu yerda paydo bo'ladi.</p>`;
+  $("#chartNote").textContent = real ? "Har bir talabaning natijasi platformaga qo'shilgan kunidan boshlab haftalarga taqsimlangan." : "Namuna: H2 gipoteza tasdiqlansa kutiladigan manzara. Eksperimental guruhda ball kamayadi, nazorat guruhida deyarli o'zgarmaydi.";
+  renderDetail();
+}
+function renderDetail() {
+  const box = $("#detail");
+  if (!selected) { box.hidden = true; return; }
+  const head = (title, sub) => `<div class="row" style="justify-content:space-between"><div><h3>${title}</h3><p class="note">${sub}</p></div><button class="btn" data-close>Yopish</button></div>`;
+  if (panelSrc !== "real") {
+    const s = DEMO.find(x => x.id === selected); if (!s) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = head(`${s.code} · namuna`, groupName(s.g) + " guruh") + `<div>${spark(s.tr)}</div><p class="note">Bu namuna ishtirokchi. Haqiqiy rejimda bu yerda test natijalari tarixi, kundalik ko'rsatkichlari va xavf signallari ko'rinadi.</p><div class="row" style="justify-content:space-between"><h4>AI xulosa psixolog uchun</h4><button class="btn" data-ai>${aiCache[selected] ? "Qayta tayyorlash" : "Xulosa tayyorlash"}</button></div><div class="ai-summary" id="aiSummary"${aiCache[selected] ? "" : " hidden"}>${esc(aiCache[selected] || "")}</div><p class="note">AI xulosasi yordamchi vosita. Qaror psixolog tomonidan qabul qilinadi.</p>`;
+    return;
+  }
+  const p = participants.find(x => x.id === selected); if (!p) { box.hidden = true; return; }
+  const s = summarize(p);
+  const res = (p.results || []).slice().reverse().slice(0, 15);
+  const diary = (p.diary || []).slice().reverse().slice(0, 10);
+  const risks = (p.riskEvents || []).slice().reverse().slice(0, 10);
+  box.hidden = false;
+  box.innerHTML = head(`${esc(s.code)} · <span class="chip ${statusCls[s.st]}">${s.st}</span>`, `${groupName(s.g)} guruh · rozilik ${p.consentAt ? fmtDate(p.consentAt) : "—"}${p.reviewedAt ? " · oxirgi ko'rib chiqilgan: " + fmtDate(p.reviewedAt) : ""}`)
+    + (s.st === "xavf" ? `<div class="sos"><h3>Ochiq xavf signali · ${fmtDate(s.lastRisk)}</h3><p>Talaba bilan bog'laning. Suhbatdan so'ng signalni ko'rib chiqilgan deb belgilang.</p><div><button class="btn primary" data-review>Ko'rib chiqildi deb belgilash</button></div></div>` : "")
+    + `<div class="detail-grid">
+      <div><h4>Test natijalari</h4>${res.length ? `<table class="history"><tbody>${res.map(r => { const b = band(r.t, r.score); return `<tr><td class="num">${fmtDate(r.date)}</td><td>${TESTS[r.t].name}</td><td class="num">${r.score}</td><td><span class="chip ${b[3]}">${b[2]}</span>${r.sos ? ' <span class="chip crit">9-savol</span>' : ""}</td></tr>`; }).join("")}</tbody></table>` : '<p class="note">Hali test topshirilmagan.</p>'}</div>
+      <div><h4>Kundalik ko'rsatkichlari</h4>${diary.length ? `<div class="entries">${diary.map(d => `<div class="entry"><div class="meta"><span class="num">${fmtDate(d.date)}</span>${d.valence != null ? `<span class="num">ohang ${(+d.valence).toFixed(2)}</span>` : ""}${d.risk ? `<span class="chip ${{ past: "ok", "o'rta": "warn", yuqori: "crit" }[d.risk] || "neutral"}">${esc(d.risk)}</span>` : ""}</div>${(d.distortions || []).length ? `<div class="tags">${d.distortions.map(x => `<span class="tagi">${esc(x)}</span>`).join("")}</div>` : ""}${d.text ? `<p>${esc(d.text)}</p>` : ""}</div>`).join("")}</div>` : '<p class="note">Kundalik yozuvlari yo\'q.</p>'}
+      ${risks.length ? `<h4 style="margin-top:12px">Suhbatdagi xavf belgilari</h4><p class="note">${risks.map(r => fmtDate(r.date)).join(", ")} · suhbat matni saqlanmaydi</p>` : ""}</div>
+    </div>
+    <p class="note">Kunlik qaydlar: ${(p.checkins || []).length} · o'rtacha kayfiyat (7 kun): ${s.mood != null ? s.mood.toFixed(1) : "—"} · suhbat sessiyalari: ${p.chatSessions || 0}</p><div class="row" style="justify-content:space-between"><h4>AI xulosa psixolog uchun</h4><button class="btn" data-ai>${aiCache[selected] ? "Qayta tayyorlash" : "Xulosa tayyorlash"}</button></div><div class="ai-summary" id="aiSummary"${aiCache[selected] ? "" : " hidden"}>${esc(aiCache[selected] || "")}</div><p class="note">AI xulosasi yordamchi vosita. Qaror psixolog tomonidan qabul qilinadi.</p>`;
+}
+$("#studentsBody").addEventListener("click", e => {
+  const tr = e.target.closest("tr[data-id]"); if (!tr) return;
+  selected = tr.dataset.id; renderPanel();
+  $("#detail").scrollIntoView({ behavior: "smooth", block: "nearest" });
+});
+$("#studentsBody").addEventListener("keydown", e => { if (e.key === "Enter") e.target.closest("tr[data-id]")?.click(); });
+$("#detail").addEventListener("click", async e => {
+  if (e.target.closest("[data-close]")) { selected = null; renderPanel(); return; }
+  const b = e.target.closest("[data-review]");
+  if (b && db) {
+    b.disabled = true; b.textContent = "Saqlanmoqda…";
+    try { await db.doc("participants/" + selected).update({ reviewedAt: Date.now() }); }
+    catch (err) { b.disabled = false; b.textContent = "Saqlanmadi (" + (err?.code || "xato") + "), qayta bosing"; }
+  }
+});
+const aiCache = {};
+function payloadFor(id) {
+  if (panelSrc !== "real") { const s = DEMO.find(x => x.id === id); return { kod: s.code, guruh: groupName(s.g), phq9_dinamika: s.tr, gad7_oxirgi: s.gad, kayfiyat_7kun: s.mood, eslatma: "namuna ma'lumot" }; }
+  const p = participants.find(x => x.id === id), day = t => new Date(t).toISOString().slice(0, 10);
+  return {
+    kod: p.code, guruh: groupName(p.group),
+    testlar: (p.results || []).slice(-20).map(r => ({ sana: day(r.date), shkala: TESTS[r.t].name, ball: r.score, savol9_ijobiy: !!r.sos })),
+    kundalik: (p.diary || []).slice(-12).map(d => ({ sana: day(d.date), ohang: d.valence, xavf: d.risk, buzilishlar: d.distortions, matn: d.text })),
+    kunlik_holat: (p.checkins || []).slice(-14).map(c => ({ sana: day(c.date), kayfiyat: c.mood, stress: c.stress, uyqu: c.sleep })),
+    suhbatdagi_xavf_signallari: (p.riskEvents || []).map(r => day(r.date)),
+    suhbat_sessiyalari: p.chatSessions || 0,
+    oxirgi_korib_chiqilgan: p.reviewedAt ? day(p.reviewedAt) : null
+  };
+}
+const SUMMARY_PROMPT = data => `Sen universitet psixologi uchun yordamchisan. Quyidagi anonim talaba ma'lumotlari asosida psixolog uchun qisqa ish xulosasini o'zbek tilida (lotin yozuvida), oddiy matnda, markdown belgilarisiz yoz.
+Tuzilishi:
+1. Holat dinamikasi (2-3 gap, raqamlarga tayan)
+2. E'tibor talab qiladigan belgilar
+3. Keyingi suhbat uchun 2-3 aniq tavsiya
+Tashxis qo'yma. Ma'lumot yetarli bo'lmasa, buni ochiq ayt. 150 so'zdan oshirma.
+
+Ma'lumot (JSON):
+${JSON.stringify(data)}`;
+$("#detail").addEventListener("click", async e => {
+  const b = e.target.closest("[data-ai]"); if (!b || !selected) return;
+  const id = selected, out = $("#aiSummary");
+  out.hidden = false; out.textContent = "O'ylanmoqda…"; b.disabled = true;
+  const sample = await getSample();
+  if (!sample) { out.textContent = "AI hozir mavjud emas: server sozlanmagan yoki platforma oflayn rejimda ochilgan."; b.disabled = false; return; }
+  try {
+    const { text } = await sample(SUMMARY_PROMPT(payloadFor(id)), { cache: false, onText: ({ text }) => { const o = $("#aiSummary"); if (o && selected === id) o.textContent = text; } });
+    aiCache[id] = text;
+    const o = $("#aiSummary"); if (o && selected === id) o.textContent = text;
+  } catch (err) {
+    const o = $("#aiSummary"); if (o) o.textContent = err.text || errText(err.code);
+  } finally { const bb = $("#detail [data-ai]"); if (bb) bb.disabled = false; }
+});
+$("#srcReal").onclick = () => { panelSrc = "real"; userPickedSrc = true; selected = null; renderPanel(); };
+$("#srcDemo").onclick = () => { panelSrc = "demo"; userPickedSrc = true; selected = null; renderPanel(); };
+renderPanel();
+
+function renderExport() {
+  $("#exportPanel").hidden = !isPsy;
+  const lines = ["kod,guruh,sana,shkala,ball,xavf_9savol"];
+  participants.forEach(p => (p.results || []).forEach(r => lines.push([p.code, groupName(p.group), new Date(r.date).toISOString().slice(0, 10), TESTS[r.t].name, r.score, r.sos ? 1 : 0].join(","))));
+  $("#exportCsv").textContent = lines.length > 1 ? lines.join("\n") : "Hali ma'lumot yo'q.";
+  $("#exportInfo").textContent = `${participants.length} ishtirokchi · ${lines.length - 1} o'lchov`;
+}
+
+/* ---------- Nafas mashqi 4-7-8 ---------- */
+const PHASES = [["Nafas oling", 4, 1], ["Ushlab turing", 7, 1], ["Sekin chiqaring", 8, .55]];
+let breathTimer = null;
+function stopBreath(done) {
+  clearInterval(breathTimer); breathTimer = null;
+  $("#breathBtn").textContent = done ? "Yana bir bor" : "Boshlash";
+  $("#orb").style.transitionDuration = "1s"; $("#orb").style.transform = "scale(.55)";
+  $("#orbText").textContent = done ? "✓" : "Tayyor";
+  $("#breathHint").textContent = done ? "Mashq yakunlandi. O'zingizni qanday his qilyapsiz?" : "4 soniya burun orqali nafas oling, 7 soniya ushlab turing, 8 soniya og'iz orqali sekin chiqaring.";
+}
+$("#breathBtn").onclick = () => {
+  if (breathTimer) return stopBreath(false);
+  let cycle = 0, pi = 0, left = 0;
+  $("#breathBtn").textContent = "To'xtatish";
+  const step = () => {
+    if (left <= 0) {
+      if (pi === PHASES.length) { pi = 0; cycle++; }
+      if (cycle === 3) return stopBreath(true);
+      const [name, sec, sc] = PHASES[pi++];
+      left = sec;
+      $("#breathHint").textContent = `${cycle + 1} / 3 sikl · ${name}`;
+      $("#orb").style.transitionDuration = sec + "s"; $("#orb").style.transform = `scale(${sc})`;
+    }
+    $("#orbText").textContent = left--;
+  };
+  step(); breathTimer = setInterval(step, 1000);
+};
+
+/* ---------- Randomizatsiya ---------- */
+function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function randomize() {
+  const n = Math.max(4, Math.min(1000, +$("#nPart").value || 0));
+  let bs = Math.max(2, +$("#block").value || 4); if (bs % 2) bs++;
+  const rnd = mulberry32(+$("#seed").value || 1), rows = [];
+  for (let i = 0; i < n; i += bs) {
+    const blk = Array.from({ length: bs }, (_, k) => k < bs / 2 ? "RuhAI" : "Nazorat");
+    for (let k = blk.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [blk[k], blk[j]] = [blk[j], blk[k]]; }
+    blk.forEach(gr => { if (rows.length < n) rows.push(gr); });
+  }
+  const e = rows.filter(r => r === "RuhAI").length;
+  $("#randSummary").textContent = `${n} ishtirokchi: RuhAI guruhi ${e}, nazorat guruhi ${n - e}. Blokli randomizatsiya (blok = ${bs}).`;
+  $("#csv").textContent = "kod,guruh,T0_PHQ9,T0_GAD7,T1_PHQ9,T1_GAD7,T2_PHQ9,T2_GAD7\n" + rows.map((g, i) => `T-${String(i + 1).padStart(3, "0")},${g},,,,,,`).join("\n");
+}
+$("#randomize").onclick = randomize; randomize();
+/* ---------- Statistika: H2 (Welch t-testi) va H3 (Pirson korrelyatsiyasi) ---------- */
+function lnGamma(z) {
+  const c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+  if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - lnGamma(1 - z);
+  z -= 1; let x = c[0]; for (let i = 1; i < 9; i++) x += c[i] / (z + i);
+  const t = z + 7.5; return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
+}
+function betacf(a, b, x) {
+  const tiny = 1e-30, fix = v => Math.abs(v) < tiny ? tiny : v;
+  let c = 1, d = 1 / fix(1 - (a + b) * x / (a + 1)), h = d;
+  for (let m = 1; m <= 300; m++) {
+    const m2 = 2 * m;
+    let aa = m * (b - m) * x / ((a - 1 + m2) * (a + m2));
+    d = 1 / fix(1 + aa * d); c = fix(1 + aa / c); h *= d * c;
+    aa = -(a + m) * (a + b + m) * x / ((a + m2) * (a + 1 + m2));
+    d = 1 / fix(1 + aa * d); c = fix(1 + aa / c); const del = d * c; h *= del;
+    if (Math.abs(del - 1) < 3e-12) break;
+  }
+  return h;
+}
+function ibeta(x, a, b) {
+  if (x <= 0) return 0; if (x >= 1) return 1;
+  const bt = Math.exp(lnGamma(a + b) - lnGamma(a) - lnGamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+  return x < (a + 1) / (a + b + 2) ? bt * betacf(a, b, x) / a : 1 - bt * betacf(b, a, 1 - x) / b;
+}
+const pT = (t, df) => ibeta(df / (df + t * t), df / 2, 0.5); // ikki tomonlama p-qiymat
+const mean = a => a.reduce((s, v) => s + v, 0) / a.length;
+const sdev = a => { const m = mean(a); return Math.sqrt(a.reduce((s, v) => s + (v - m) ** 2, 0) / (a.length - 1)); };
+function welch(a, b) {
+  const va = sdev(a) ** 2 / a.length, vb = sdev(b) ** 2 / b.length;
+  const t = (mean(a) - mean(b)) / Math.sqrt(va + vb);
+  const df = (va + vb) ** 2 / (va ** 2 / (a.length - 1) + vb ** 2 / (b.length - 1));
+  const sp = Math.sqrt(((a.length - 1) * sdev(a) ** 2 + (b.length - 1) * sdev(b) ** 2) / (a.length + b.length - 2));
+  return { t, df, p: pT(t, df), d: (mean(a) - mean(b)) / sp };
+}
+function pearson(x, y) {
+  const mx = mean(x), my = mean(y); let sxy = 0, sxx = 0, syy = 0;
+  x.forEach((v, i) => { sxy += (v - mx) * (y[i] - my); sxx += (v - mx) ** 2; syy += (y[i] - my) ** 2; });
+  const r = sxy / Math.sqrt(sxx * syy), n = x.length;
+  return { r, n, p: Math.abs(r) >= 1 ? 0 : pT(r * Math.sqrt((n - 2) / (1 - r * r)), n - 2) };
+}
+function demoStudy() {
+  const rnd = mulberry32(77), gauss = () => { let u = 0; while (!u) u = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rnd()); };
+  return Array.from({ length: 240 }, (_, i) => {
+    const g = i % 2 ? "E" : "N", trust = Math.round(Math.min(30, Math.max(6, 19 + 5 * gauss())));
+    const eff = g === "E" ? -2.6 - 0.2 * (trust - 19) : -0.8;
+    return { g, trust, change: Math.round((eff + 3.6 * gauss()) * 10) / 10 };
+  });
+}
+function realStudy() {
+  return participants.map(p => {
+    const ph = (p.results || []).filter(r => r.t === "phq"), tr = (p.results || []).filter(r => r.t === "trust");
+    return ph.length >= 2 ? { g: p.group, change: ph[ph.length - 1].score - ph[0].score, trust: tr.length ? tr[tr.length - 1].score : null } : null;
+  }).filter(Boolean);
+}
+let statSrc = "demo", statPicked = false;
+const fmtP = p => p < 0.001 ? "p < 0.001" : "p = " + p.toFixed(3);
+const sizeWord = d => { const a = Math.abs(d); return a < 0.2 ? "juda kichik" : a < 0.5 ? "kichik" : a < 0.8 ? "o'rtacha" : "katta"; };
+function ciChart(groups) {
+  const W = 520, H = 120, L = 110, R = 20, T = 10, B = 26;
+  const lo = Math.floor(Math.min(0, ...groups.map(g => g.m - g.ci)) - 1), hi = Math.ceil(Math.max(0, ...groups.map(g => g.m + g.ci)) + 1);
+  const x = v => L + (v - lo) / (hi - lo) * (W - L - R), rowY = i => T + 22 + i * 40;
+  let g = "";
+  for (let v = lo; v <= hi; v++) if (v % 2 === 0) g += `<line x1="${x(v)}" x2="${x(v)}" y1="${T}" y2="${H - B}" stroke="var(--line)"/><text x="${x(v)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="JetBrains Mono, monospace">${v > 0 ? "+" + v : v}</text>`;
+  g += `<line x1="${x(0)}" x2="${x(0)}" y1="${T}" y2="${H - B}" stroke="var(--muted)"/>`;
+  groups.forEach((gr, i) => {
+    const y = rowY(i);
+    g += `<text x="${L - 10}" y="${y + 4}" text-anchor="end" font-size="12" fill="var(--ink)">${gr.name}</text>`;
+    g += `<line x1="${x(gr.m - gr.ci)}" x2="${x(gr.m + gr.ci)}" y1="${y}" y2="${y}" stroke="${gr.col}" stroke-width="2"/>`;
+    g += `<line x1="${x(gr.m - gr.ci)}" x2="${x(gr.m - gr.ci)}" y1="${y - 6}" y2="${y + 6}" stroke="${gr.col}" stroke-width="2"/><line x1="${x(gr.m + gr.ci)}" x2="${x(gr.m + gr.ci)}" y1="${y - 6}" y2="${y + 6}" stroke="${gr.col}" stroke-width="2"/>`;
+    g += `<circle cx="${x(gr.m)}" cy="${y}" r="5" fill="${gr.col}"/><text x="${x(gr.m)}" y="${y - 10}" text-anchor="middle" font-size="11" font-weight="600" fill="${gr.col}" font-family="JetBrains Mono, monospace">${gr.m.toFixed(1)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Guruhlar bo'yicha PHQ-9 o'zgarishi, 95% ishonch oralig'i bilan">${g}</svg>`;
+}
+function renderStats() {
+  const real = statSrc === "real";
+  $("#statSeg").hidden = !isPsy;
+  $("#statReal").setAttribute("aria-pressed", real); $("#statDemo").setAttribute("aria-pressed", !real);
+  const rows = real ? realStudy() : demoStudy();
+  $("#statInfo").textContent = real
+    ? `Kamida ikki marta PHQ-9 topshirgan ${rows.length} ta talaba asosida. O'zgarish = oxirgi PHQ-9 − birinchi PHQ-9 (manfiy qiymat yaxshilanishni bildiradi).`
+    : "Namuna: 240 ishtirokchi uchun simulyatsiya qilingan ma'lumot. Haqiqiy ma'lumotlar yig'ilgach, xuddi shu hisob-kitob avtomatik bajariladi.";
+  const E = rows.filter(r => r.g === "E").map(r => r.change), C = rows.filter(r => r.g === "N").map(r => r.change);
+  if (E.length < 3 || C.length < 3) { $("#statBody").innerHTML = `<p class="note">Tahlil uchun har bir guruhda kamida 3 ta talaba PHQ-9 ni ikki marta topshirgan bo'lishi kerak. Hozir: eksperimental ${E.length}, nazorat ${C.length}.</p>`; return; }
+  const w = welch(E, C), ci = a => 1.96 * sdev(a) / Math.sqrt(a.length);
+  const h2ok = w.p < 0.05 && mean(E) < mean(C);
+  const tp = rows.filter(r => r.g === "E" && r.trust != null);
+  let h3 = `<p class="note">H3 uchun eksperimental guruhda kamida 5 ta talaba «AI'ga ishonch» shkalasini to'ldirgan bo'lishi kerak (hozir ${tp.length}).</p>`;
+  if (tp.length >= 5) {
+    const pr = pearson(tp.map(r => r.trust), tp.map(r => r.change)), h3ok = pr.p < 0.05 && pr.r < 0;
+    h3 = `<div class="verdict ${h3ok ? "ok" : "warn"}"><b>${h3ok ? "H3 qo'llab-quvvatlanadi" : "H3 hozircha tasdiqlanmadi"}</b>
+      <span class="formula">r(${pr.n - 2}) = ${pr.r.toFixed(2)}, ${fmtP(pr.p)}</span>
+      <span>${h3ok ? "Eksperimental guruhda AI'ga ishonch qanchalik yuqori bo'lsa, PHQ-9 balli shunchalik ko'p kamaygan." : "AI'ga ishonch va PHQ-9 o'zgarishi o'rtasida statistik ahamiyatli manfiy bog'liqlik topilmadi."}</span></div>
+      <p class="note">Bu dastlabki korrelyatsion baho. Dissertatsiyada moderatsiya guruh × ishonch o'zaro ta'siri bilan regressiya orqali (SPSS PROCESS, 1-model) tekshiriladi.</p>`;
+  }
+  $("#statBody").innerHTML = `<div class="stat-grid">
+    <div><h4>H2 · Intervensiya samaradorligi</h4>
+      <table class="history"><thead><tr><th>Guruh</th><th>n</th><th>O'rtacha o'zgarish</th><th>SD</th></tr></thead><tbody>
+        <tr><td>Eksperimental</td><td class="num">${E.length}</td><td class="num">${mean(E).toFixed(2)}</td><td class="num">${sdev(E).toFixed(2)}</td></tr>
+        <tr><td>Nazorat</td><td class="num">${C.length}</td><td class="num">${mean(C).toFixed(2)}</td><td class="num">${sdev(C).toFixed(2)}</td></tr>
+      </tbody></table>
+      <div class="verdict ${h2ok ? "ok" : "warn"}"><b>${h2ok ? "H2 tasdiqlandi" : "H2 hozircha tasdiqlanmadi"}</b>
+        <span class="formula">Welch t(${w.df.toFixed(1)}) = ${w.t.toFixed(2)}, ${fmtP(w.p)}, Cohen d = ${w.d.toFixed(2)}</span>
+        <span>${h2ok ? `Eksperimental guruhda PHQ-9 nazorat guruhiga nisbatan ahamiyatli ko'proq kamaygan; samara hajmi ${sizeWord(w.d)}.` : "Guruhlar o'rtasidagi farq statistik ahamiyatli emas yoki kutilgan yo'nalishda emas."}</span></div>
+    </div>
+    <div><h4>PHQ-9 o'zgarishi, 95% ishonch oralig'i</h4>
+      <div class="mini">${ciChart([{ name: "Eksperimental", m: mean(E), ci: ci(E), col: "var(--accent)" }, { name: "Nazorat", m: mean(C), ci: ci(C), col: "var(--ctrl)" }])}</div>
+      <h4>H3 · AI'ga ishonchning roli</h4>${h3}
+    </div>
+  </div>`;
+}
+$("#statReal").onclick = () => { statSrc = "real"; statPicked = true; renderStats(); };
+$("#statDemo").onclick = () => { statSrc = "demo"; statPicked = true; renderStats(); };
+renderStats();
+
+function copyPre(pre, note) {
+  const fallback = () => { const r = document.createRange(); r.selectNodeContents(pre); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); note.textContent = "Matn belgilandi, Ctrl+C bilan nusxalang."; };
+  try { navigator.clipboard.writeText(pre.textContent).then(() => { note.textContent = "Nusxalandi."; }, fallback); } catch { fallback(); }
+}
+$("#copyCsv").onclick = () => copyPre($("#csv"), $("#copyNote"));
+$("#copyExport").onclick = () => copyPre($("#exportCsv"), $("#copyExportNote"));
+/* ---------- Umumiy: respondent hujjatiga yozish ---------- */
+const DAY = 864e5;
+let allParticipants = [], participantsSig = "", studies = [], studiesSig = "", studyCache = {}, dbSettled = false, studiesUnsub = null;
+// Umumiy rozilikdan qat'i nazar yoziladi (tadqiqot ishtiroki uchun); yozuvlar navbat bilan ketadi
+function writeMine(mutate) {
+  if (!myRef) return Promise.reject({ code: "offline" });
+  const p = writeChain.then(async () => {
+    const base = myDoc ? structuredClone(myDoc) : { code: codeFrom(me), group: groupFrom(me), createdAt: Date.now(), consent: false, results: [], diary: [], riskEvents: [] };
+    mutate(base); base.updatedAt = Date.now();
+    await myRef.set(base); myDoc = base;
+  });
+  writeChain = p.catch(() => {});
+  return p;
+}
+const armOf = (st, enr) => (st.arms || []).find(a => a.id === enr.arm) || st.arms?.[0];
+const armName = (st, id) => (st.arms || []).find(a => a.id === id)?.name || id || "—";
+function downloadText(name, text) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["﻿" + text], { type: "text/csv;charset=utf-8" }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ---------- Treyninglar ---------- */
+const TCATS = [...new Set(Object.values(TRAININGS).map(t => t.category))];
+let tCat = "all", tCur = null, tTimer = null;
+function assignedTrainings() {
+  const set = new Set();
+  Object.entries(myDoc?.studies || {}).forEach(([sid, e]) => { const st = studyCache[sid]; if (st && st.status !== "closed") (armOf(st, e)?.trainings || []).forEach(id => set.add(id)); });
+  return set;
+}
+function renderTrainingList() {
+  $("#tCats").innerHTML = [["all", "Barchasi"], ...TCATS.map(c => [c, c])].map(([k, l]) => `<button type="button" aria-pressed="${k === tCat}" data-cat="${esc(k)}">${esc(l)}</button>`).join("");
+  const assigned = assignedTrainings();
+  $("#tList").innerHTML = Object.entries(TRAININGS).filter(([, t]) => tCat === "all" || t.category === tCat).map(([id, t]) => `
+    <button type="button" class="tcard" data-t="${id}">
+      <span class="row" style="gap:6px"><span class="chip neutral">${esc(t.category)}</span>${assigned.has(id) ? `<span class="chip ok">tadqiqotda tayinlangan</span>` : ""}</span>
+      <b>${esc(t.title)}</b><span class="note">${esc(t.goal)}</span><span class="note num">${t.minutes} daqiqa</span>
+    </button>`).join("");
+}
+$("#tCats").addEventListener("click", e => { const b = e.target.closest("[data-cat]"); if (b) { tCat = b.dataset.cat; renderTrainingList(); } });
+$("#tList").addEventListener("click", e => { const b = e.target.closest("[data-t]"); if (b) openTraining(b.dataset.t); });
+function stopTTimer(done) {
+  clearInterval(tTimer); tTimer = null;
+  const orb = $("#tOrb"); if (!orb) return;
+  orb.style.transitionDuration = "1s"; orb.style.transform = "scale(.55)";
+  $("#tOrbText").textContent = done ? "✓" : "Tayyor";
+  $("#tTimerBtn").textContent = done ? "Yana bir bor" : "Boshlash";
+  if (done) $("#tHint").textContent = "Mashq yakunlandi.";
+}
+function openTraining(id) {
+  stopTTimer(); tCur = id;
+  const t = TRAININGS[id];
+  let body = "";
+  if (t.kind === "timer") body = `<ol class="steps">${t.steps.map(s => `<li>${esc(s)}</li>`).join("")}</ol>
+    <div class="breath"><div class="orb-wrap"><div class="orb" id="tOrb"><span id="tOrbText">Tayyor</span></div></div>
+    <p class="note" id="tHint">${t.cycles} sikl</p><button type="button" class="btn primary" id="tTimerBtn">Boshlash</button></div>`;
+  else if (t.kind === "steps") body = `<div class="checklist">${t.steps.map((s, i) => `<label class="check" for="tstep${i}"><input type="checkbox" id="tstep${i}"><span>${esc(s)}</span></label>`).join("")}</div>`;
+  else body = t.fields.map(f => `<label class="field" for="tf-${f.key}">${esc(f.label)}<textarea id="tf-${f.key}" name="${f.key}" rows="2"></textarea></label>`).join("");
+  const box = $("#tRunner");
+  box.hidden = false;
+  box.innerHTML = `<div class="row" style="justify-content:space-between;align-items:flex-start"><div><span class="chip neutral">${esc(t.category)}</span><h3 style="margin-top:8px">${esc(t.title)}</h3></div><button type="button" class="btn" data-tclose>Yopish</button></div>
+    <p>${esc(t.goal)}</p>
+    <label class="slider" for="tPre">Boshlashdan oldin kayfiyatingiz (0 juda yomon, 10 a'lo)<output id="tPreOut">5</output><input type="range" id="tPre" min="0" max="10" value="5"></label>
+    ${body}
+    <label class="slider" for="tPost">Mashqdan keyingi kayfiyatingiz<output id="tPostOut">5</output><input type="range" id="tPost" min="0" max="10" value="5"></label>
+    <div class="row" style="justify-content:space-between"><span class="note">Manba: ${esc(t.source)}</span><button type="button" class="btn primary" id="tDone">Yakunlash va saqlash</button></div>
+    <p class="note" id="tStatus">${t.kind === "form" ? "Yozganlaringiz faqat shu qurilmada saqlanadi; tadqiqotchi faqat mashq bajarilganini va kayfiyat ko'rsatkichlarini ko'radi." : ""}</p>`;
+  show("treyninglar");
+  box.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+$("#tRunner").addEventListener("input", e => { if (e.target.type === "range") $("#" + e.target.id + "Out").textContent = e.target.value; });
+$("#tRunner").addEventListener("click", e => {
+  if (e.target.closest("[data-tclose]")) { stopTTimer(); $("#tRunner").hidden = true; tCur = null; return; }
+  if (e.target.id === "tTimerBtn") {
+    if (tTimer) return stopTTimer(false);
+    const t = TRAININGS[tCur];
+    let cycle = 0, pi = 0, left = 0;
+    e.target.textContent = "To'xtatish";
+    const step = () => {
+      if (left <= 0) {
+        if (pi === t.phases.length) { pi = 0; cycle++; }
+        if (cycle === t.cycles) return stopTTimer(true);
+        const [name, sec, sc] = t.phases[pi++];
+        left = sec;
+        $("#tHint").textContent = `${cycle + 1} / ${t.cycles} sikl · ${name}`;
+        $("#tOrb").style.transitionDuration = sec + "s"; $("#tOrb").style.transform = `scale(${sc})`;
+      }
+      $("#tOrbText").textContent = left--;
+    };
+    step(); tTimer = setInterval(step, 1000);
+    return;
+  }
+  if (e.target.id === "tDone") {
+    const t = TRAININGS[tCur], id = tCur, date = Date.now();
+    const pre = +$("#tPre").value, post = +$("#tPost").value;
+    const notes = t.kind === "form" ? Object.fromEntries(t.fields.map(f => [f.key, $("#tf-" + f.key).value.trim()])) : null;
+    const log = store.get("trainingLog", []); log.unshift({ id, date, pre, post, ...(notes ? { notes } : {}) }); store.set("trainingLog", log.slice(0, 200));
+    shareMine(d => { d.trainings ??= []; d.trainings.push({ id, date, pre, post }); d.trainings = d.trainings.slice(-200); });
+    const sids = Object.entries(myDoc?.studies || {}).filter(([sid, en]) => { const st = studyCache[sid]; return st && st.status !== "closed" && (armOf(st, en)?.trainings || []).includes(id); }).map(([sid]) => sid);
+    if (sids.length) writeMine(d => sids.forEach(sid => { const en = d.studies[sid]; if (!en) return; en.trainings ??= []; en.trainings.push({ id, date, pre, post }); })).then(renderMyStudies, () => {});
+    stopTTimer();
+    $("#tRunner").innerHTML = `<h3>Barakalla!</h3><p>«${esc(t.title)}» mashqi saqlandi. Kayfiyat: ${pre} → ${post}${post > pre ? " (yaxshilandi)" : ""}.</p><div><button type="button" class="btn" data-tclose>Yopish</button></div>`;
+    renderTHistory();
+  }
+});
+function renderTHistory() {
+  const log = store.get("trainingLog", []).filter(r => TRAININGS[r.id]);
+  $("#tHistory").hidden = !log.length;
+  $("#tHistBody").innerHTML = log.slice(0, 15).map(r => `<tr><td class="num">${fmtDate(r.date)}</td><td>${esc(TRAININGS[r.id].title)}</td><td class="num">${r.pre} → ${r.post}</td></tr>`).join("");
+}
+
+/* ---------- Tadqiqotlar: respondent tomoni ---------- */
+let joinCandidate = null, taskCtx = null;
+async function loadStudy(id) {
+  if (studyCache[id]) return studyCache[id];
+  try { const s = await db.doc("studies/" + id).get(); if (s.exists) studyCache[id] = s.data(); } catch {}
+  return studyCache[id] || null;
+}
+async function findStudyByCode(code) {
+  if (backend === "cf") return (await api("/api/studies/code/" + encodeURIComponent(code))).data;
+  const snap = await db.collection("studies").where("code", "==", code).limit(5).get();
+  return snap.docs.map(d => d.data()).find(s => s.status === "active") || null;
+}
+$("#joinForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const code = $("#joinCode").value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const say = t => { $("#joinStatus").textContent = t; };
+  if (!db) return say("Tadqiqotlarda ishtirok etish uchun platforma server bilan ishlashi kerak.");
+  if (code.length < 4) return say("Kodni to'liq kiriting.");
+  say("Qidirilmoqda…");
+  try {
+    const st = await findStudyByCode(code);
+    if (!st) return say("Bu kod bilan faol tadqiqot topilmadi. Kodni tekshiring yoki tadqiqotchiga murojaat qiling.");
+    if (myDoc?.studies?.[st.id]) return say("Siz bu tadqiqotda allaqachon ishtirok etyapsiz.");
+    studyCache[st.id] = st; joinCandidate = st; say(""); renderJoinCandidate();
+  } catch (err) { say("Qidirishda xato: " + (err?.code || "server javob bermadi")); }
+});
+function renderJoinCandidate() {
+  const st = joinCandidate, box = $("#joinInfo");
+  if (!st) { box.hidden = true; return; }
+  const scales = st.instruments.filter(id => INSTRUMENTS[id]);
+  const mins = scales.reduce((s, id) => s + INSTRUMENTS[id].minutes, 0);
+  box.hidden = false;
+  box.innerHTML = `<div class="eyebrow">Tadqiqotga taklif</div><h3>${esc(st.title)}</h3>${st.description ? `<p>${esc(st.description)}</p>` : ""}
+    <p class="note">O'lchovlar: ${st.waves.map(w => esc(w.label)).join(" → ")} · har bir o'lchov taxminan ${mins} daqiqa · metodikalar: ${scales.map(id => esc(INSTRUMENTS[id].name)).join(", ")}</p>
+    <div class="consent-text">${esc(st.consent || "").replace(/\n/g, "<br>")}</div>
+    <label class="check" for="joinAgree"><input type="checkbox" id="joinAgree"><span>Shartlar bilan tanishdim va tadqiqotda ixtiyoriy ishtirok etishga roziman.</span></label>
+    <div class="row"><button type="button" class="btn primary" id="joinBtn" disabled>Ishtirok etish</button><button type="button" class="btn" id="joinCancel">Bekor qilish</button></div>`;
+}
+$("#joinInfo").addEventListener("change", e => { if (e.target.id === "joinAgree") $("#joinBtn").disabled = !e.target.checked; });
+$("#joinInfo").addEventListener("click", async e => {
+  if (e.target.id === "joinCancel") { joinCandidate = null; renderJoinCandidate(); return; }
+  if (e.target.id !== "joinBtn") return;
+  const st = joinCandidate; e.target.disabled = true;
+  const arms = st.arms?.length ? st.arms : [{ id: "A" }];
+  const arm = arms[Math.floor(Math.random() * arms.length)].id; // oddiy randomizatsiya
+  try {
+    await writeMine(d => { d.studies ??= {}; d.studies[st.id] = { joinedAt: Date.now(), consentAt: Date.now(), arm, responses: [], trainings: [] }; });
+    joinCandidate = null; renderJoinCandidate(); $("#joinCode").value = "";
+    $("#joinStatus").textContent = "Tadqiqotga qo'shildingiz. Birinchi topshiriqlar quyida.";
+    renderMyStudies(); renderTrainingList();
+  } catch (err) { e.target.disabled = false; $("#joinStatus").textContent = "Qo'shilib bo'lmadi: " + (err?.code || "xato"); }
+});
+async function renderMyStudies() {
+  const box = $("#myStudies");
+  $("#studiesOffline").hidden = !dbSettled || !!db;
+  if (!db) { box.innerHTML = dbSettled ? "" : `<p class="note">Ulanmoqda…</p>`; return; }
+  const enr = Object.entries(myDoc?.studies || {});
+  if (!enr.length) { box.innerHTML = `<p class="note">Siz hali hech qaysi tadqiqotda ishtirok etmayapsiz. Tadqiqotchidan olgan kodni yuqorida kiriting.</p>`; return; }
+  const loaded = await Promise.all(enr.map(([sid]) => loadStudy(sid)));
+  box.innerHTML = enr.map(([sid, e], i) => studyTasksHtml(sid, e, loaded[i])).join("");
+}
+const waveOpenAt = (e, w) => e.joinedAt + (w.day || 0) * DAY;
+// Anketalar (demografiya) faqat birinchi o'lchovda, shkalalar har bir o'lchovda to'ldiriladi
+const instrumentsFor = (st, w) => st.instruments.filter(id => INSTRUMENTS[id] && (!isForm(id) || w.id === st.waves[0]?.id));
+const leaveBtn = sid => `<div class="row"><button type="button" class="btn ghost" data-leave="${esc(sid)}">Tadqiqotdan chiqish</button></div>`;
+function studyTasksHtml(sid, e, st) {
+  if (!st) return `<div class="panel"><h3>Tadqiqot topilmadi</h3><p class="note">Tadqiqotchi uni o'chirgan yoki vaqtincha yopgan bo'lishi mumkin.</p>${leaveBtn(sid)}</div>`;
+  const closed = st.status === "closed", now = Date.now();
+  const waves = st.waves.map(w => {
+    const open = now >= waveOpenAt(e, w);
+    const list = instrumentsFor(st, w);
+    const done = list.filter(id => (e.responses || []).some(r => r.inst === id && r.wave === w.id));
+    const tasks = list.map(id => {
+      const isDone = done.includes(id), t = INSTRUMENTS[id];
+      return `<li class="task${isDone ? " done" : ""}"><span>${esc(t.name)} <span class="note">${esc(t.full)} · ${t.minutes} daq</span></span>${isDone ? `<span class="chip ok">bajarildi</span>`
+        : open && !closed ? `<button type="button" class="btn small primary" data-task="${esc(sid)}|${esc(w.id)}|${id}">To'ldirish</button>` : `<span class="note">kutilmoqda</span>`}</li>`;
+    }).join("");
+    const status = done.length === list.length ? `<span class="chip ok">yakunlandi</span>` : open ? `<span class="note num">${done.length} / ${list.length}</span>` : `<span class="note">${fmtDate(waveOpenAt(e, w))} dan ochiladi</span>`;
+    return `<div class="wave"><div class="row" style="justify-content:space-between"><b>${esc(w.label)}</b>${status}</div>${open ? `<ul class="tasks">${tasks}</ul>` : ""}</div>`;
+  }).join("");
+  const tr = (armOf(st, e)?.trainings || []).filter(id => TRAININGS[id]).map(id => {
+    const n = (e.trainings || []).filter(x => x.id === id).length;
+    return `<li class="task"><span>${esc(TRAININGS[id].title)} <span class="note">${n ? n + " marta bajarilgan" : "hali bajarilmagan"}</span></span>${closed ? "" : `<button type="button" class="btn small" data-train="${id}">Bajarish</button>`}</li>`;
+  }).join("");
+  return `<div class="panel"><div class="row" style="justify-content:space-between"><h3>${esc(st.title)}</h3><span class="chip ${closed ? "neutral" : "ok"}">${closed ? "yakunlangan" : "faol"}</span></div>
+    <p class="note">Qo'shilgan sana: ${fmtDate(e.joinedAt)}</p>${waves}
+    ${tr ? `<div class="wave"><b>Treyninglar</b><ul class="tasks">${tr}</ul></div>` : ""}${leaveBtn(sid)}</div>`;
+}
+$("#myStudies").addEventListener("click", e => {
+  const tb = e.target.closest("[data-task]"); if (tb) { const [sid, wave, inst] = tb.dataset.task.split("|"); openTask(sid, wave, inst); return; }
+  const trb = e.target.closest("[data-train]"); if (trb) { openTraining(trb.dataset.train); return; }
+  const lv = e.target.closest("[data-leave]");
+  if (lv) { lv.parentElement.innerHTML = `<span class="note">Rostdan ham chiqmoqchimisiz? Bu tadqiqotdagi barcha javoblaringiz o'chiriladi.</span><button type="button" class="btn danger" data-leave-yes="${esc(lv.dataset.leave)}">Ha, chiqish</button><button type="button" class="btn" data-leave-no>Yo'q</button>`; return; }
+  if (e.target.closest("[data-leave-no]")) { renderMyStudies(); return; }
+  const ly = e.target.closest("[data-leave-yes]");
+  if (ly) { ly.disabled = true; const sid = ly.dataset.leaveYes; writeMine(d => { if (d.studies) delete d.studies[sid]; }).then(() => { renderMyStudies(); renderTrainingList(); }, err => { ly.disabled = false; ly.textContent = "Xato: " + (err?.code || "qayta urinib ko'ring"); }); }
+});
+function openTask(sid, wave, inst) {
+  taskCtx = { sid, wave, inst };
+  const t = INSTRUMENTS[inst], st = studyCache[sid], w = st.waves.find(x => x.id === wave);
+  const box = $("#taskRunner");
+  box.hidden = false;
+  box.innerHTML = `<div class="row" style="justify-content:space-between;align-items:flex-start"><div><div class="eyebrow">${esc(st.title)} · ${esc(w?.label || wave)}</div><h3>${esc(t.full)} (${esc(t.name)})</h3></div><button type="button" class="btn" data-task-close>Yopish</button></div>
+    <p class="lead">${esc(t.lead)}</p>
+    <form id="taskForm">${questionsHtml(inst, "task-")}
+      <div class="row" style="justify-content:space-between"><span class="note" id="taskProgress"></span><button type="submit" class="btn primary" id="taskSubmit">Javoblarni yuborish</button></div>
+    </form>`;
+  updateTaskProgress();
+  box.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function updateTaskProgress() {
+  const { inst } = taskCtx, a = readAnswers(inst, $("#taskForm"), "task-");
+  $("#taskProgress").textContent = `${answeredCount(inst, a)} / ${totalCount(inst)} javob berildi`;
+  $("#taskSubmit").disabled = !isComplete(inst, a);
+}
+$("#taskRunner").addEventListener("change", e => { if (e.target.closest("#taskForm")) updateTaskProgress(); });
+$("#taskRunner").addEventListener("click", e => { if (e.target.closest("[data-task-close]")) { $("#taskRunner").hidden = true; taskCtx = null; } });
+$("#taskRunner").addEventListener("submit", async e => {
+  e.preventDefault();
+  const { sid, wave, inst } = taskCtx, st = studyCache[sid];
+  const a = readAnswers(inst, $("#taskForm"), "task-");
+  const res = isForm(inst) ? { score: null, sub: null, sos: false } : scoreInstrument(inst, a);
+  const rec = { inst, wave, date: Date.now(), answers: a, score: res.score, ...(res.sub ? { sub: res.sub } : {}), ...(res.sos ? { sos: true } : {}) };
+  $("#taskSubmit").disabled = true; $("#taskProgress").textContent = "Yuborilmoqda…";
+  try {
+    await writeMine(d => {
+      const en = d.studies?.[sid]; if (!en) throw { code: "not_enrolled" };
+      en.responses = (en.responses || []).filter(r => !(r.inst === inst && r.wave === wave));
+      en.responses.push(rec);
+    });
+  } catch (err) { $("#taskSubmit").disabled = false; $("#taskProgress").textContent = "Yuborilmadi: " + (err?.code || "xato") + ". Qayta urinib ko'ring."; return; }
+  $("#taskRunner").innerHTML = `<div class="row" style="justify-content:space-between"><h3>Javoblaringiz qabul qilindi</h3><button type="button" class="btn" data-task-close>Yopish</button></div>
+    ${!isForm(inst) && st.showResults ? resultHtml(inst, res) : `<p>Rahmat! Keyingi topshiriqqa o'tishingiz mumkin.</p>${res.sos ? SOS_HTML : ""}`}`;
+  renderMyStudies();
+});
+
+/* ---------- Tadqiqotlar: tadqiqotchi tomoni ---------- */
+let selStudy = null, selResp = null, editing = null, demoRows = null, statWave = null;
+const DEFAULT_CONSENT = "Ushbu tadqiqot talabalarning psixoemotsional holatini o'rganishga qaratilgan.\nIshtirok ixtiyoriy: istalgan vaqtda sababsiz chiqib ketishingiz mumkin, bu holda javoblaringiz o'chiriladi.\nJavoblaringiz ismingizsiz, anonim kod bilan saqlanadi va faqat umumlashtirilgan ko'rinishda ilmiy maqsadlarda ishlatiladi.\nAgar savollar sizni bezovta qilsa, to'ldirishni to'xtating va universitet psixologiga murojaat qiling. Shoshilinch holatda: 103 yoki 112.";
+const ARM_PRESETS = [{ id: "E", name: "Eksperimental guruh" }, { id: "N", name: "Nazorat guruhi" }, { id: "C", name: "Qo'shimcha guruh" }];
+const genCode = () => Array.from({ length: 6 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]).join("");
+function newStudy() {
+  return {
+    id: "s-" + Math.random().toString(36).slice(2, 10), code: genCode(), title: "", description: "", consent: DEFAULT_CONSENT,
+    status: "draft", showResults: true, instruments: ["demo", "phq", "gad"],
+    waves: [{ id: "T0", label: "T0 · boshlang'ich", day: 0 }, { id: "T1", label: "T1 · oraliq", day: 28 }, { id: "T2", label: "T2 · yakuniy", day: 56 }],
+    arms: [{ id: "E", name: "Eksperimental guruh", trainings: ["breath478", "thought", "activation"] }, { id: "N", name: "Nazorat guruhi", trainings: [] }],
+    createdAt: Date.now()
+  };
+}
+function sampleStudy() {
+  return { ...newStudy(), id: "s-namuna", code: "NAMUNA", status: "active", demo: true,
+    title: "Namuna: AI-suhbatdosh intervensiyasining samaradorligi",
+    description: "8 haftalik randomizatsiyalangan nazorat guruhli tadqiqot (simulyatsiya qilingan ma'lumotlar).",
+    instruments: ["demo", "phq", "gad", "pss", "who5", "brs", "trust"] };
+}
+const respondentsOf = st => demoRows || allParticipants.filter(p => p.studies?.[st.id]).map(p => ({ id: p.id, code: p.code || "—", enr: p.studies[st.id] }));
+
+function renderStudiesView() {
+  const gate = $("#rsGate");
+  if (!isPsy) {
+    gate.hidden = false;
+    $("#rsGateText").textContent = !dbSettled ? "Ulanmoqda…"
+      : backend === "cf" ? "Tadqiqot yaratish va respondentlar ma'lumotlarini ko'rish uchun «Psixolog paneli» bo'limida psixolog kaliti bilan kiring."
+      : backend === "claude" ? "Tadqiqot yaratish uchun artifaktga Editor huquqi kerak."
+      : "Tadqiqotlar server bilan ishlaydi (Cloudflare yoki claude.ai). Imkoniyatlarni namuna tadqiqotda ko'rishingiz mumkin.";
+  } else gate.hidden = true;
+  $("#rsList").hidden = !isPsy;
+  if (isPsy) {
+    $("#rsBody").innerHTML = studies.length ? studies.map(st => {
+      const n = allParticipants.filter(p => p.studies?.[st.id]).length;
+      const chip = { draft: ["neutral", "qoralama"], active: ["ok", "faol"], closed: ["warn", "yakunlangan"] }[st.status] || ["neutral", st.status];
+      return `<tr data-study="${esc(st.id)}" class="${selStudy?.id === st.id ? "sel" : ""}" tabindex="0"><td><b>${esc(st.title)}</b></td><td><span class="chip ${chip[0]}">${chip[1]}</span></td><td class="num">${esc(st.code)}</td><td class="num">${n}</td><td>${st.instruments.map(id => esc(INSTRUMENTS[id]?.name || id)).join(", ")}</td><td class="num">${st.waves.length}</td></tr>`;
+    }).join("") : `<tr><td colspan="6" class="note">Hali tadqiqot yo'q. «Yangi tadqiqot» tugmasini bosing yoki imkoniyatlarni namunada ko'ring.</td></tr>`;
+  }
+  renderEditor();
+  renderStudyDetail();
+}
+$("#rsBody").addEventListener("click", e => {
+  const tr = e.target.closest("[data-study]"); if (!tr) return;
+  selStudy = studies.find(s => s.id === tr.dataset.study); demoRows = null; selResp = null; statWave = null; editing = null;
+  renderStudiesView(); $("#studyDetail").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+$("#rsBody").addEventListener("keydown", e => { if (e.key === "Enter") e.target.closest("[data-study]")?.click(); });
+$("#rsNew").onclick = () => { editing = newStudy(); selStudy = null; demoRows = null; renderStudiesView(); $("#studyEditor").scrollIntoView({ behavior: "smooth", block: "start" }); };
+const openDemo = () => { selStudy = sampleStudy(); demoRows = simulateRespondents(selStudy, 80); selResp = null; statWave = null; editing = null; renderStudiesView(); $("#studyDetail").scrollIntoView({ behavior: "smooth", block: "start" }); };
+$("#rsDemo").onclick = openDemo; $("#rsDemo2").onclick = openDemo;
+
+// Tadqiqot konstruktori
+function renderEditor() {
+  const s = editing, box = $("#studyEditor");
+  if (!s) { box.hidden = true; return; }
+  box.hidden = false;
+  const exists = studies.some(x => x.id === s.id);
+  const hasData = exists && allParticipants.some(p => p.studies?.[s.id]);
+  const instChecks = DOMAINS.map(d => {
+    const ids = Object.keys(INSTRUMENTS).filter(id => INSTRUMENTS[id].domain === d);
+    return `<div class="inst-group"><h4>${esc(d)}</h4>${ids.map(id => { const t = INSTRUMENTS[id]; return `<label class="check" for="ei-${id}"><input type="checkbox" id="ei-${id}" data-inst="${id}"${s.instruments.includes(id) ? " checked" : ""}><span><b>${esc(t.name)}</b> · ${esc(t.full)} <span class="note num">${totalCount(id)} savol · ${t.minutes} daq</span></span></label>`; }).join("")}</div>`;
+  }).join("");
+  const waves = s.waves.map((w, i) => `<div class="row wave-row"><input class="inp" data-wave-label="${i}" value="${esc(w.label)}" aria-label="To'lqin nomi"><label class="note" for="wd-${i}">kuni</label><input class="inp num" id="wd-${i}" type="number" min="0" data-wave-day="${i}" value="${w.day}" style="width:84px"><button type="button" class="btn small" data-wave-del="${i}"${s.waves.length < 2 ? " disabled" : ""}>O'chirish</button></div>`).join("");
+  const arms = s.arms.map((a, i) => `<div class="arm"><input class="inp" data-arm-name="${i}" value="${esc(a.name)}" aria-label="Guruh nomi"><span class="note">Tayinlanadigan treyninglar:</span><div class="tr-grid">${Object.entries(TRAININGS).map(([id, t]) => `<label class="check small" for="at-${i}-${id}"><input type="checkbox" id="at-${i}-${id}" data-arm-tr="${i}|${id}"${a.trainings.includes(id) ? " checked" : ""}><span>${esc(t.title)}</span></label>`).join("")}</div></div>`).join("");
+  box.innerHTML = `<div class="row" style="justify-content:space-between"><h3>${exists ? "Tadqiqotni tahrirlash" : "Yangi tadqiqot"}</h3><button type="button" class="btn" data-ed-close>Yopish</button></div>
+    <div class="form-grid">
+      <label class="field wide" for="esTitle">Tadqiqot nomi<input id="esTitle" class="inp" value="${esc(s.title)}" placeholder="Masalan, Talabalarda stressni kamaytirish dasturi"></label>
+      <label class="field wide" for="esDesc">Respondentlar uchun qisqa tavsif<textarea id="esDesc" rows="2">${esc(s.description)}</textarea></label>
+      <label class="field wide" for="esConsent">Xabardor qilingan rozilik matni<textarea id="esConsent" rows="5">${esc(s.consent)}</textarea></label>
+      <label class="field" for="esCode">Qo'shilish kodi (4–12 lotin harf yoki raqam)<input id="esCode" class="inp num" value="${esc(s.code)}" maxlength="12"></label>
+      <label class="field" for="esStatus">Holati<select id="esStatus">${[["draft", "Qoralama"], ["active", "Faol: respondentlar qo'shila oladi"], ["closed", "Yakunlangan"]].map(([v, l]) => `<option value="${v}"${s.status === v ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+      <label class="check wide" for="esShow"><input type="checkbox" id="esShow"${s.showResults ? " checked" : ""}><span>Respondentga test natijasi va talqinini ko'rsatish</span></label>
+    </div>
+    <div class="row" style="justify-content:space-between"><h4>Metodikalar</h4><span class="note" id="esTime"></span></div>
+    <div class="inst-grid">${instChecks}</div>
+    <h4>O'lchov to'lqinlari</h4>
+    <p class="note">«Kuni» — respondent qo'shilgan kundan boshlab o'lchov ochiladigan kun. Shkalalar har bir to'lqinda, demografik anketa faqat birinchi to'lqinda to'ldiriladi.</p>
+    ${waves}<div><button type="button" class="btn small" data-wave-add>To'lqin qo'shish</button></div>
+    <h4>Dizayn: guruhlar va treyninglar</h4>
+    <div class="seg" role="group" aria-label="Guruhlar soni">${[1, 2, 3].map(n => `<button type="button" data-arms="${n}" aria-pressed="${s.arms.length === n}">${["Bir guruhli", "Ikki guruh (RNT)", "Uch guruh"][n - 1]}</button>`).join("")}</div>
+    <p class="note">Respondentlar guruhlarga tasodifiy taqsimlanadi. Har bir guruhga tayinlangan treyninglar respondentning topshiriqlar ro'yxatida ko'rinadi.${hasData ? " Diqqat: tadqiqotda allaqachon ma'lumot bor, guruhlar va to'lqinlarni o'zgartirish tahlilni buzishi mumkin." : ""}</p>
+    ${arms}
+    <div class="row" style="justify-content:space-between"><span class="note" id="esMsg"></span><div class="row" id="esActions">${exists ? `<button type="button" class="btn danger" data-ed-del>O'chirish</button>` : ""}<button type="button" class="btn primary" data-ed-save>Saqlash</button></div></div>`;
+  updateEstTime();
+}
+function collectEditor() {
+  const s = editing, box = $("#studyEditor");
+  s.title = $("#esTitle").value.trim(); s.description = $("#esDesc").value.trim(); s.consent = $("#esConsent").value.trim();
+  s.code = $("#esCode").value.trim().toUpperCase(); s.status = $("#esStatus").value; s.showResults = $("#esShow").checked;
+  s.instruments = Object.keys(INSTRUMENTS).filter(id => box.querySelector(`[data-inst="${id}"]`)?.checked);
+  s.waves.forEach((w, i) => { w.label = box.querySelector(`[data-wave-label="${i}"]`).value.trim() || w.id; w.day = Math.max(0, +box.querySelector(`[data-wave-day="${i}"]`).value || 0); });
+  s.arms.forEach((a, i) => { a.name = box.querySelector(`[data-arm-name="${i}"]`).value.trim() || a.id; a.trainings = Object.keys(TRAININGS).filter(id => box.querySelector(`[data-arm-tr="${i}|${id}"]`)?.checked); });
+}
+function updateEstTime() {
+  const ids = Object.keys(INSTRUMENTS).filter(id => $("#studyEditor").querySelector(`[data-inst="${id}"]`)?.checked);
+  const mins = ids.reduce((s, id) => s + INSTRUMENTS[id].minutes, 0), items = ids.reduce((s, id) => s + totalCount(id), 0);
+  $("#esTime").textContent = `Tanlandi: ${ids.length} ta metodika · ${items} savol · bir o'lchov taxminan ${mins} daqiqa`;
+}
+$("#studyEditor").addEventListener("change", e => { if (e.target.dataset.inst) updateEstTime(); });
+$("#studyEditor").addEventListener("click", async e => {
+  const t = e.target;
+  if (t.closest("[data-ed-close]")) { editing = null; renderStudiesView(); return; }
+  if (t.closest("[data-wave-add]")) {
+    collectEditor();
+    const next = Math.max(-1, ...editing.waves.map(w => +String(w.id).replace(/\D/g, "") || 0)) + 1;
+    const lastDay = editing.waves.length ? editing.waves[editing.waves.length - 1].day : 0;
+    editing.waves.push({ id: "T" + next, label: `T${next} · kuzatuv`, day: lastDay + 28 });
+    renderEditor(); return;
+  }
+  if (t.dataset.waveDel != null) { collectEditor(); editing.waves.splice(+t.dataset.waveDel, 1); renderEditor(); return; }
+  if (t.dataset.arms) {
+    collectEditor();
+    const n = +t.dataset.arms;
+    if (n === 1) editing.arms = [{ id: "A", name: "Asosiy guruh", trainings: editing.arms[0]?.trainings || [] }];
+    else editing.arms = ARM_PRESETS.slice(0, n).map((p, i) => editing.arms.find(a => a.id === p.id) || { ...p, trainings: i === 0 ? (editing.arms[0]?.trainings || []) : [] });
+    renderEditor(); return;
+  }
+  if (t.closest("[data-ed-del]")) {
+    $("#esActions").innerHTML = `<span class="note">Tadqiqot o'chirilsinmi? Respondentlarning javoblari ularning hujjatlarida qoladi.</span><button type="button" class="btn danger" data-ed-del-yes>Ha, o'chirish</button><button type="button" class="btn" data-ed-del-no>Yo'q</button>`;
+    return;
+  }
+  if (t.closest("[data-ed-del-no]")) { collectEditor(); renderEditor(); return; }
+  if (t.closest("[data-ed-del-yes]")) {
+    try { await db.doc("studies/" + editing.id).delete(); } catch (err) { $("#esMsg").textContent = "O'chirib bo'lmadi: " + (err?.code || "xato"); return; }
+    studies = studies.filter(x => x.id !== editing.id); delete studyCache[editing.id];
+    if (selStudy?.id === editing.id) selStudy = null;
+    editing = null; renderStudiesView(); return;
+  }
+  if (t.closest("[data-ed-save]")) {
+    collectEditor();
+    const s = editing, msg = m => { $("#esMsg").textContent = m; };
+    if (!s.title) return msg("Tadqiqot nomini kiriting.");
+    if (!s.instruments.length) return msg("Kamida bitta metodika tanlang.");
+    if (!/^[A-Z0-9]{4,12}$/.test(s.code)) return msg("Kod 4–12 ta lotin harf yoki raqamdan iborat bo'lsin.");
+    if (studies.some(x => x.id !== s.id && x.code === s.code)) return msg("Bu kod boshqa tadqiqotda ishlatilgan.");
+    s.waves.sort((a, b) => a.day - b.day);
+    const doc = { ...structuredClone(s), updatedAt: Date.now() };
+    msg("Saqlanmoqda…");
+    try { await db.doc("studies/" + s.id).set(doc); }
+    catch (err) { return msg(err?.code === "code_taken" ? "Bu kod boshqa tadqiqotda ishlatilgan." : "Saqlanmadi: " + (err?.code || "xato")); }
+    studies = [doc, ...studies.filter(x => x.id !== s.id)]; studyCache[s.id] = doc;
+    selStudy = doc; editing = null; demoRows = null;
+    renderStudiesView();
+  }
+});
+
+// Tadqiqot tafsilotlari: respondentlar, statistika, eksport
+function renderStudyDetail() {
+  const box = $("#studyDetail"), st = selStudy;
+  if (!st) { box.hidden = true; return; }
+  box.hidden = false;
+  const rows = respondentsOf(st), now = Date.now();
+  const scales = st.instruments.filter(id => INSTRUMENTS[id] && !isForm(id));
+  const armCounts = (st.arms || []).map(a => `${esc(a.name)}: ${rows.filter(r => r.enr.arm === a.id).length}`).join(" · ");
+  const waveDone = w => { const opened = rows.filter(r => now >= waveOpenAt(r.enr, w)); const full = opened.filter(r => instrumentsFor(st, w).every(id => r.enr.responses?.some(x => x.inst === id && x.wave === w.id))); return opened.length ? Math.round(full.length / opened.length * 100) + "%" : "—"; };
+  const risk = rows.filter(r => r.enr.responses?.some(x => x.sos)).length;
+  const joinUrl = backend === "cf" ? `${location.origin}/#join-${st.code}` : "";
+  box.innerHTML = `
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div><div class="eyebrow">${st.demo ? "Namuna · simulyatsiya qilingan ma'lumotlar" : "Tadqiqot"}</div><h3>${esc(st.title)}</h3>${st.description ? `<p class="note">${esc(st.description)}</p>` : ""}</div>
+        <div class="row">${st.demo ? "" : `<button type="button" class="btn" data-st-edit>Tahrirlash</button>`}<button type="button" class="btn" data-st-close>Yopish</button></div>
+      </div>
+      <div class="row" style="gap:18px">
+        <div><div class="note">Qo'shilish kodi</div><div class="big" style="font-size:1.6rem">${esc(st.code)}</div></div>
+        ${joinUrl ? `<div style="min-width:0"><div class="note">Taklif havolasi</div><div class="row"><span class="code" id="joinUrl" style="overflow-wrap:anywhere">${esc(joinUrl)}</span><button type="button" class="btn small" data-copy-join>Nusxalash</button></div></div>` : `<p class="note" style="max-width:40ch">Respondentlar platformani ochib, «Tadqiqotlarim» bo'limida shu kodni kiritadi.</p>`}
+      </div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><span class="label">Respondentlar</span><span class="v">${rows.length}</span><span class="s">${armCounts}</span></div>
+      ${st.waves.slice(0, 2).map(w => `<div class="kpi"><span class="label">${esc(w.label)} to'liq bajargan</span><span class="v">${waveDone(w)}</span><span class="s">o'lchov ochilganlar orasida</span></div>`).join("")}
+      <div class="kpi"><span class="label">Xavf signali</span><span class="v">${risk}</span><span class="s">PHQ-9 ning 9-savoli</span></div>
+    </div>
+    <div class="panel">
+      <div class="row" style="justify-content:space-between"><h3>Respondentlar</h3><span class="note">Batafsil ko'rish uchun qatorni bosing</span></div>
+      <div class="tablewrap tall"><table class="students"><thead><tr><th>Kod</th><th>Guruh</th><th>Qo'shilgan</th>${st.waves.map(w => `<th>${esc(w.id)}</th>`).join("")}<th>Treyninglar</th><th>Oxirgi faollik</th><th>Holat</th></tr></thead><tbody id="respBody">
+      ${rows.length ? rows.map(r => {
+        const resp = r.enr.responses || [], last = Math.max(r.enr.joinedAt, ...resp.map(x => x.date), ...(r.enr.trainings || []).map(x => x.date));
+        const cells = st.waves.map(w => { if (now < waveOpenAt(r.enr, w)) return `<td class="note">—</td>`; const list = instrumentsFor(st, w), n = list.filter(id => resp.some(x => x.inst === id && x.wave === w.id)).length; return `<td><span class="chip ${n === list.length ? "ok" : n ? "warn" : "neutral"}">${n}/${list.length}</span></td>`; }).join("");
+        const sos = resp.some(x => x.sos);
+        return `<tr data-resp="${esc(r.id)}" class="${sos ? "risk" : ""}${selResp === r.id ? " sel" : ""}" tabindex="0"><td class="num">${esc(r.code)}</td><td>${esc(armName(st, r.enr.arm))}</td><td class="num">${fmtDate(r.enr.joinedAt)}</td>${cells}<td class="num">${(r.enr.trainings || []).length}</td><td class="num">${fmtDate(last)}</td><td>${sos ? `<span class="chip crit">xavf</span>` : `<span class="chip neutral">me'yor</span>`}</td></tr>`;
+      }).join("") : `<tr><td colspan="${st.waves.length + 6}" class="note">Hali respondent yo'q. ${st.status === "active" ? "Kod yoki havolani respondentlarga yuboring." : "Respondentlar qo'shila olishi uchun tadqiqot holatini «Faol» qiling."}</td></tr>`}
+      </tbody></table></div>
+    </div>
+    <div class="panel" id="respDetail" hidden></div>
+    <div class="panel" id="studyStats"></div>
+    <div class="panel" id="studyExport"></div>`;
+  renderRespDetail(); renderStudyStats(); renderStudyExport();
+}
+$("#studyDetail").addEventListener("click", e => {
+  if (e.target.closest("[data-st-close]")) { selStudy = null; demoRows = null; renderStudiesView(); return; }
+  if (e.target.closest("[data-st-edit]")) { editing = structuredClone(selStudy); renderStudiesView(); $("#studyEditor").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+  if (e.target.closest("[data-copy-join]")) { copyPre($("#joinUrl"), e.target.closest("[data-copy-join]")); return; }
+  const tr = e.target.closest("[data-resp]");
+  if (tr) { selResp = tr.dataset.resp; document.querySelectorAll("#respBody tr").forEach(x => x.classList.toggle("sel", x === tr)); renderRespDetail(); $("#respDetail").scrollIntoView({ behavior: "smooth", block: "nearest" }); return; }
+  if (e.target.closest("[data-resp-close]")) { selResp = null; renderRespDetail(); return; }
+  const cp = e.target.closest("[data-copy]"); if (cp) { copyPre($("#" + cp.dataset.copy), cp.nextElementSibling); return; }
+  const dl = e.target.closest("[data-dl]"); if (dl) { downloadText(dl.dataset.name, $("#" + dl.dataset.dl).textContent); return; }
+});
+$("#studyDetail").addEventListener("change", e => { if (e.target.id === "statWave") { statWave = e.target.value; renderStudyStats(); } });
+$("#studyDetail").addEventListener("keydown", e => { if (e.key === "Enter") e.target.closest("[data-resp]")?.click(); });
+
+function renderRespDetail() {
+  const box = $("#respDetail"), st = selStudy;
+  const r = selResp && respondentsOf(st).find(x => x.id === selResp);
+  if (!r) { box.hidden = true; return; }
+  box.hidden = false;
+  const resp = r.enr.responses || [];
+  const demo = resp.find(x => isForm(x.inst));
+  const waves = st.waves.map(w => {
+    const list = resp.filter(x => x.wave === w.id && !isForm(x.inst));
+    if (!list.length) return "";
+    return `<tr><th colspan="4" class="wave-head">${esc(w.label)}</th></tr>` + list.map(x => { const b = band(x.inst, x.score); return `<tr><td>${esc(INSTRUMENTS[x.inst]?.name || x.inst)}</td><td class="num">${fmtDate(x.date)}</td><td class="num">${fmtScore(x.inst, x.score)}${x.sub ? `<span class="note"> (${Object.entries(x.sub).map(([k, v]) => `${esc(k)} ${v.toFixed(2)}`).join("; ")})</span>` : ""}</td><td><span class="chip ${b[3]}">${esc(b[2])}</span>${x.sos ? ` <span class="chip crit">9-savol</span>` : ""}</td></tr>`; }).join("");
+  }).join("");
+  const tr = (r.enr.trainings || []).slice().reverse();
+  box.innerHTML = `<div class="row" style="justify-content:space-between"><div><h3>${esc(r.code)}</h3><p class="note">${esc(armName(st, r.enr.arm))} · qo'shilgan ${fmtDate(r.enr.joinedAt)}</p></div><button type="button" class="btn" data-resp-close>Yopish</button></div>
+    ${demo ? `<div class="tags">${Object.entries(demo.answers).filter(([, v]) => v !== "").map(([k, v]) => `<span class="tagi">${esc(INSTRUMENTS[demo.inst].fields.find(f => f.key === k)?.label || k)}: <b>${esc(v)}</b></span>`).join("")}</div>` : ""}
+    <div class="detail-grid">
+      <div><h4>Metodikalar natijalari</h4>${waves ? `<table class="history"><tbody>${waves}</tbody></table>` : `<p class="note">Hali javob yo'q.</p>`}</div>
+      <div><h4>Treyninglar</h4>${tr.length ? `<table class="history"><thead><tr><th>Sana</th><th>Mashq</th><th>Kayfiyat</th></tr></thead><tbody>${tr.map(x => `<tr><td class="num">${fmtDate(x.date)}</td><td>${esc(TRAININGS[x.id]?.title || x.id)}</td><td class="num">${x.pre} → ${x.post}</td></tr>`).join("")}</tbody></table>` : `<p class="note">Treyning bajarilmagan.</p>`}</div>
+    </div>`;
+}
+
+// Statistika: tavsifiy ko'rsatkichlar, Kronbax alfasi, guruhlar farqi, korrelyatsiyalar
+const variance = a => sdev(a) ** 2;
+function cronbach(matrix) {
+  const k = matrix[0].length;
+  const itemVar = Array.from({ length: k }, (_, j) => variance(matrix.map(r => r[j]))).reduce((s, v) => s + v, 0);
+  const totVar = variance(matrix.map(r => r.reduce((s, v) => s + v, 0)));
+  return totVar > 0 ? k / (k - 1) * (1 - itemVar / totVar) : NaN;
+}
+const alphaWord = a => a >= 0.9 ? "a'lo" : a >= 0.8 ? "yaxshi" : a >= 0.7 ? "qoniqarli" : a >= 0.6 ? "shubhali" : "past";
+const ms = a => a.length ? `${mean(a).toFixed(2)} (${a.length > 1 ? sdev(a).toFixed(2) : "—"})` : "—";
+const stars = p => p < 0.001 ? "***" : p < 0.01 ? "**" : p < 0.05 ? "*" : "";
+function waveData(st, rows, waveId, id) {
+  return rows.map(r => { const x = r.enr.responses?.find(y => y.inst === id && y.wave === waveId); return x ? { r, x } : null; }).filter(Boolean);
+}
+function renderStudyStats() {
+  const box = $("#studyStats"), st = selStudy, rows = respondentsOf(st);
+  const scales = st.instruments.filter(id => INSTRUMENTS[id] && !isForm(id));
+  if (!statWave || !st.waves.some(w => w.id === statWave)) statWave = st.waves[0]?.id;
+  const w0 = st.waves[0]?.id, arms = st.arms || [];
+  const [A, B] = arms;
+  const head = `<div class="row" style="justify-content:space-between"><h3>Statistik tahlil</h3><label class="field" for="statWave">O'lchov<select id="statWave">${st.waves.map(w => `<option value="${esc(w.id)}"${w.id === statWave ? " selected" : ""}>${esc(w.label)}</option>`).join("")}</select></label></div>`;
+  if (!scales.length || !rows.length) { box.innerHTML = head + `<p class="note">Tahlil respondentlar javob bera boshlagach paydo bo'ladi.</p>`; return; }
+  const desc = scales.map(id => {
+    const d = waveData(st, rows, statWave, id), all = d.map(o => o.x.score);
+    const byArm = arms.map(a => d.filter(o => o.r.enr.arm === a.id).map(o => o.x.score));
+    const mat = d.map(o => itemValues(id, o.x.answers));
+    const alpha = mat.length >= 3 && mat[0].length >= 2 ? cronbach(mat) : NaN;
+    let cmp = "—";
+    if (B) {
+      const a1 = byArm[0], b1 = byArm[1];
+      if (a1.length >= 2 && b1.length >= 2) { const w = welch(a1, b1); cmp = `t(${w.df.toFixed(1)}) = ${w.t.toFixed(2)}, ${fmtP(w.p)}, d = ${w.d.toFixed(2)}`; }
+    }
+    let chg = "";
+    if (B && statWave !== w0) {
+      const change = arm => rows.filter(r => r.enr.arm === arm.id).map(r => { const s0 = r.enr.responses?.find(y => y.inst === id && y.wave === w0), s1 = r.enr.responses?.find(y => y.inst === id && y.wave === statWave); return s0 && s1 ? s1.score - s0.score : null; }).filter(v => v != null);
+      const ca = change(A), cb = change(B);
+      chg = ca.length >= 2 && cb.length >= 2 ? (() => { const w = welch(ca, cb); return `${mean(ca).toFixed(2)} vs ${mean(cb).toFixed(2)}; t(${w.df.toFixed(1)}) = ${w.t.toFixed(2)}, ${fmtP(w.p)}, d = ${w.d.toFixed(2)}`; })() : "—";
+    }
+    return `<tr><td><b>${esc(INSTRUMENTS[id].name)}</b></td><td class="num">${all.length}</td><td class="num">${ms(all)}</td>${arms.length > 1 ? byArm.map(v => `<td class="num">${ms(v)}</td>`).join("") : ""}<td class="num">${isNaN(alpha) ? "—" : `${alpha.toFixed(2)} <span class="note">${alphaWord(alpha)}</span>`}</td>${B ? `<td class="num formula">${cmp}</td>` : ""}${B && statWave !== w0 ? `<td class="num formula">${chg}</td>` : ""}</tr>`;
+  }).join("");
+  // Korrelyatsiya matritsasi (tanlangan o'lchovdagi umumiy ballar)
+  const scoreMap = Object.fromEntries(scales.map(id => [id, new Map(waveData(st, rows, statWave, id).map(o => [o.r.id, o.x.score]))]));
+  let corr = "";
+  if (scales.length >= 2) {
+    corr = `<h4>Korrelyatsiya matritsasi (Pirson r)</h4><div class="tablewrap"><table class="history corr"><thead><tr><th></th>${scales.map(id => `<th>${esc(INSTRUMENTS[id].name)}</th>`).join("")}</tr></thead><tbody>${scales.map((a, i) => `<tr><th>${esc(INSTRUMENTS[a].name)}</th>${scales.map((b, j) => {
+      if (j >= i) return `<td class="note">${j === i ? "1" : ""}</td>`;
+      const ids = [...scoreMap[a].keys()].filter(k => scoreMap[b].has(k));
+      if (ids.length < 4) return `<td class="note">—</td>`;
+      const pr = pearson(ids.map(k => scoreMap[a].get(k)), ids.map(k => scoreMap[b].get(k)));
+      return `<td class="num">${isNaN(pr.r) ? "—" : pr.r.toFixed(2) + stars(pr.p)}</td>`;
+    }).join("")}</tr>`).join("")}</tbody></table></div><p class="note">* p &lt; 0.05 · ** p &lt; 0.01 · *** p &lt; 0.001</p>`;
+  }
+  // Demografik tavsif
+  const demoId = st.instruments.find(id => isForm(id));
+  let demoHtml = "";
+  if (demoId) {
+    const answers = rows.map(r => r.enr.responses?.find(x => x.inst === demoId)?.answers).filter(Boolean);
+    if (answers.length) demoHtml = `<h4>Tanlanma tavsifi (n = ${answers.length})</h4><div class="tags">${INSTRUMENTS[demoId].fields.map(f => {
+      if (f.type === "number") { const v = answers.map(a => a[f.key]).filter(x => typeof x === "number"); return v.length ? `<span class="tagi">${esc(f.label)}: <b class="num">M = ${mean(v).toFixed(1)}, SD = ${v.length > 1 ? sdev(v).toFixed(1) : "—"}</b></span>` : ""; }
+      if (f.type === "select") return f.options.map(o => { const n = answers.filter(a => a[f.key] === o).length; return n ? `<span class="tagi">${esc(o)}: <b class="num">${n} (${Math.round(n / answers.length * 100)}%)</b></span>` : ""; }).join("");
+      return "";
+    }).join("")}</div>`;
+  }
+  const trAll = rows.flatMap(r => (r.enr.trainings || []).map(x => ({ ...x, arm: r.enr.arm })));
+  const trHtml = trAll.length >= 3 ? (() => { const d = trAll.map(x => x.post - x.pre); return `<h4>Treyninglar samarasi</h4><p class="formula">${trAll.length} ta mashq · kayfiyat o'zgarishi M = ${mean(d) >= 0 ? "+" : ""}${mean(d).toFixed(2)} (SD = ${sdev(d).toFixed(2)}) ball</p>`; })() : "";
+  box.innerHTML = head + `
+    <div class="tablewrap"><table class="history"><thead><tr><th>Metodika</th><th>n</th><th>M (SD)</th>${arms.length > 1 ? arms.map(a => `<th>${esc(a.name)} M (SD)</th>`).join("") : ""}<th>Kronbax α</th>${B ? `<th>${esc(A.name)} va ${esc(B.name)}: Welch t</th>` : ""}${B && statWave !== w0 ? `<th>O'zgarish ${esc(w0)} → ${esc(statWave)}</th>` : ""}</tr></thead><tbody>${desc}</tbody></table></div>
+    <p class="note">α ≥ 0.7 qoniqarli ichki muvofiqlikni bildiradi. Guruhlar farqi birinchi ikki guruh orasida hisoblanadi; d — Koen samara hajmi.${arms.length > 2 ? " Uch guruhni solishtirish uchun ma'lumotlarni eksport qilib, dispersion tahlil (ANOVA) o'tkazing." : ""}</p>
+    ${corr}${demoHtml}${trHtml}`;
+}
+
+// Eksport: SPSS/R uchun keng formatdagi CSV
+const varName = id => ({ trust: "AITRUST", demo: "DEMO" })[id] || INSTRUMENTS[id].name.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+const csvCell = v => { const s = v == null ? "" : String(v); return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+function studyCsv(st, rows) {
+  const scales = st.instruments.filter(id => INSTRUMENTS[id] && !isForm(id)), demoId = st.instruments.find(id => isForm(id));
+  const demoFields = demoId ? INSTRUMENTS[demoId].fields.map(f => f.key) : [];
+  const head = ["kod", "guruh", "tolqin", "qoshilgan", ...demoFields];
+  scales.forEach(id => { const t = INSTRUMENTS[id], v = varName(id); t.items.forEach((_, i) => head.push(`${v}_${i + 1}`)); head.push(`${v}_jami`); Object.keys(t.subscales || {}).forEach(k => head.push(`${v}_${k.replace(/[^A-Za-z0-9]/g, "")}`)); });
+  const lines = [head.join(",")];
+  rows.forEach(r => {
+    const resp = r.enr.responses || [], demo = demoId ? resp.find(x => x.inst === demoId)?.answers || {} : {};
+    st.waves.forEach(w => {
+      if (!resp.some(x => x.wave === w.id && !isForm(x.inst))) return;
+      const line = [r.code, armName(st, r.enr.arm), w.id, new Date(r.enr.joinedAt).toISOString().slice(0, 10), ...demoFields.map(k => demo[k])];
+      scales.forEach(id => { const t = INSTRUMENTS[id], x = resp.find(y => y.inst === id && y.wave === w.id); t.items.forEach((_, i) => line.push(x ? x.answers[i] : "")); line.push(x ? x.score : ""); Object.keys(t.subscales || {}).forEach(k => line.push(x?.sub ? x.sub[k] : "")); });
+      lines.push(line.map(csvCell).join(","));
+    });
+  });
+  return lines.join("\n");
+}
+function trainingsCsv(st, rows) {
+  const lines = ["kod,guruh,treyning,sana,kayfiyat_oldin,kayfiyat_keyin,farq"];
+  rows.forEach(r => (r.enr.trainings || []).forEach(x => lines.push([r.code, armName(st, r.enr.arm), TRAININGS[x.id]?.title || x.id, new Date(x.date).toISOString().slice(0, 10), x.pre, x.post, x.post - x.pre].map(csvCell).join(","))));
+  return lines.join("\n");
+}
+function renderStudyExport() {
+  const st = selStudy, rows = respondentsOf(st), slug = st.code.toLowerCase();
+  const canDownload = backend !== "claude";
+  const block = (id, title, text, name) => `<details><summary><b>${title}</b> <span class="note">${text.split("\n").length - 1} qator</span></summary><pre class="csv" id="${id}">${esc(text)}</pre>
+    <div class="row"><button type="button" class="btn" data-copy="${id}">Nusxalash</button><span class="note"></span>${canDownload ? `<button type="button" class="btn" data-dl="${id}" data-name="${name}">CSV faylni yuklab olish</button>` : ""}</div></details>`;
+  $("#studyExport").innerHTML = `<h3>Ma'lumotlarni eksport qilish</h3>
+    <p class="note">Har bir qator: respondent × o'lchov. Ustunlar: demografiya, har bir savolning xom javobi, umumiy ball va subshkalalar. SPSS, R yoki Excel'ga to'g'ridan-to'g'ri yuklanadi.</p>
+    ${block("csvMain", "Metodikalar javoblari", studyCsv(st, rows), `ruhai-${slug}-javoblar.csv`)}
+    ${block("csvTrain", "Treyninglar jurnali", trainingsCsv(st, rows), `ruhai-${slug}-treyninglar.csv`)}`;
+}
+
+// Namuna: tadqiqot imkoniyatlarini ko'rsatish uchun simulyatsiya qilingan respondentlar (saqlanmaydi)
+function simulateRespondents(st, n) {
+  const rnd = mulberry32(2026), gauss = () => { let u = 0; while (!u) u = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rnd()); };
+  const NEG = new Set(["phq", "gad", "pss", "ucla3"]), clamp10 = v => Math.max(0, Math.min(10, v));
+  return Array.from({ length: n }, (_, i) => {
+    const arm = st.arms[i % st.arms.length], z = gauss(), joinedAt = Date.now() - (62 + (i % 9)) * DAY, responses = [];
+    st.waves.forEach((w, wi) => {
+      if (wi && rnd() < 0.07 * wi) return;
+      const distress = z + (arm.id === "E" ? -0.5 : -0.08) * wi + 0.35 * gauss();
+      st.instruments.forEach(id => {
+        const t = INSTRUMENTS[id], date = joinedAt + w.day * DAY + 3600e3;
+        if (isForm(id)) {
+          if (!wi) responses.push({ inst: id, wave: w.id, date, score: null, answers: { yosh: 18 + Math.floor(rnd() * 6), jins: rnd() < 0.6 ? "Ayol" : "Erkak", kurs: ["1-kurs", "2-kurs", "3-kurs", "4-kurs"][Math.floor(rnd() * 4)], yonalish: "Psixologiya", yashash: ["Oila bilan", "Talabalar turar joyida", "Ijarada"][Math.floor(rnd() * 3)], psixolog: rnd() < 0.2 ? "Ha" : "Yo'q" } });
+          return;
+        }
+        const k = t.opts.length, mid = (k - 1) / 2, dir = NEG.has(id) ? 1 : -1, rev = new Set(t.reverse || []);
+        const answers = t.items.map((_, j) => { let v = Math.round(mid + dir * distress * (k / 3.2) + 0.9 * gauss()); v = Math.max(0, Math.min(k - 1, v)); if (rev.has(j + 1)) v = k - 1 - v; return t.start + v; });
+        if (id === "phq") answers[8] = rnd() < 0.04 ? 1 : 0;
+        const res = scoreInstrument(id, answers);
+        responses.push({ inst: id, wave: w.id, date, answers, score: res.score, ...(res.sub ? { sub: res.sub } : {}), ...(res.sos ? { sos: true } : {}) });
+      });
+    });
+    const trainings = [];
+    (arm.trainings || []).forEach(tid => { const times = Math.floor(rnd() * 6); for (let j = 0; j < times; j++) { const pre = clamp10(Math.round(4.5 + 2 * gauss())); trainings.push({ id: tid, date: joinedAt + (j + 1) * 6 * DAY, pre, post: clamp10(pre + Math.round(1 + gauss())) }); } });
+    return { id: "namuna-" + i, code: "R-" + (1001 + i), enr: { arm: arm.id, joinedAt, responses, trainings } };
+  });
+}
+
+/* ---------- Instrumentlar banki ---------- */
+let bankTab = "inst";
+function renderBank() {
+  $("#bankTabI").setAttribute("aria-pressed", bankTab === "inst"); $("#bankTabT").setAttribute("aria-pressed", bankTab === "train");
+  if (bankTab === "inst") {
+    $("#bankList").innerHTML = DOMAINS.map(d => `<h4>${esc(d)}</h4>` + Object.entries(INSTRUMENTS).filter(([, t]) => t.domain === d).map(([id, t]) => `
+      <details class="bank-card"><summary><span><b>${esc(t.name)}</b> · ${esc(t.full)}</span><span class="tags"><span class="tagi num">${totalCount(id)} savol</span><span class="tagi num">${t.minutes} daq</span></span></summary>
+        <div class="bank-body">
+          <p>${esc(t.lead)}</p>
+          ${isForm(id) ? `<ul>${t.fields.map(f => `<li>${esc(f.label)}${f.options ? ` <span class="note">(${f.options.map(esc).join(" / ")})</span>` : ""}</li>`).join("")}</ul>` : `
+          <ol>${t.items.map((q, i) => `<li>${esc(q)}${(t.reverse || []).includes(i + 1) ? ` <span class="chip neutral">teskari</span>` : ""}</li>`).join("")}</ol>
+          <p><b>Javob shkalasi:</b> ${t.opts.map((o, k) => `${t.start + k} — ${esc(o)}`).join("; ")}</p>
+          <p><b>Hisoblash:</b> ${t.scoring === "mean" ? "savollar o'rtachasi" : "ballar yig'indisi"}, diapazon ${t.min}–${t.max}${t.reverse ? `; teskari savollar: ${t.reverse.join(", ")}` : ""}${t.subscales ? `; subshkalalar: ${Object.entries(t.subscales).map(([k, v]) => `${esc(k)} (${v.join(", ")})`).join("; ")}` : ""}</p>
+          <div class="tags">${t.bands.map(b => `<span class="chip ${b[3]}">${b[0]}–${b[1]}: ${esc(b[2])}</span>`).join("")}</div>`}
+          ${t.note ? `<p class="note">${esc(t.note)}</p>` : ""}
+          <p class="note"><b>Manba:</b> ${esc(t.source)}<br><b>Foydalanish:</b> ${esc(t.license)}</p>
+          ${isForm(id) ? "" : `<div><button type="button" class="btn small" data-try="${id}">Sinab ko'rish</button></div>`}
+        </div></details>`).join("")).join("");
+  } else {
+    $("#bankList").innerHTML = TCATS.map(c => `<h4>${esc(c)}</h4>` + Object.entries(TRAININGS).filter(([, t]) => t.category === c).map(([id, t]) => `
+      <details class="bank-card"><summary><span><b>${esc(t.title)}</b></span><span class="tags"><span class="tagi num">${t.minutes} daq</span><span class="tagi">${{ timer: "taymerli", steps: "bosqichli", form: "yozma" }[t.kind]}</span></span></summary>
+        <div class="bank-body"><p>${esc(t.goal)}</p>
+          ${t.steps ? `<ol>${t.steps.map(s => `<li>${esc(s)}</li>`).join("")}</ol>` : ""}${t.fields ? `<ol>${t.fields.map(f => `<li>${esc(f.label)}</li>`).join("")}</ol>` : ""}
+          <p class="note"><b>Manba:</b> ${esc(t.source)}</p><div><button type="button" class="btn small" data-open-t="${id}">Treyningni ochish</button></div>
+        </div></details>`).join("")).join("");
+  }
+}
+$("#bankTabI").onclick = () => { bankTab = "inst"; renderBank(); };
+$("#bankTabT").onclick = () => { bankTab = "train"; renderBank(); };
+$("#bankList").addEventListener("click", e => {
+  const b = e.target.closest("[data-try]"); if (b) { openTest(b.dataset.try); return; }
+  const t = e.target.closest("[data-open-t]"); if (t) openTraining(t.dataset.openT);
+});
+
+function onBackendReady() {
+  dbSettled = true;
+  if (isPsy && db && !studiesUnsub) {
+    studiesUnsub = db.collection("studies").onSnapshot(s => {
+      const sig = s.docs.map(d => d.id + ":" + (d.data()?.updatedAt || 0)).join("|");
+      if (sig === studiesSig) return;
+      studiesSig = sig;
+      studies = s.docs.map(d => d.data()).filter(Boolean).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+      studies.forEach(x => { studyCache[x.id] = x; });
+      if (selStudy && !selStudy.demo) selStudy = studies.find(x => x.id === selStudy.id) || selStudy;
+      renderStudiesView();
+    }, e => { $("#rsGateText").textContent = "Tadqiqotlarni o'qib bo'lmadi: " + e.code; });
+  }
+  renderMyStudies().then(renderTrainingList);
+  renderStudiesView();
+  if (joinMatch && db) { $("#joinCode").value = joinMatch[1].toUpperCase(); $("#joinForm").requestSubmit(); }
+}
+renderTrainingList(); renderTHistory(); renderBank(); renderMyStudies(); renderStudiesView();
+
+$("#psyLogin").addEventListener("submit", async e => {
+  e.preventDefault();
+  const tok = $("#psyToken").value.trim(); if (!tok) return;
+  $("#psyLoginNote").textContent = "Tekshirilmoqda…";
+  try {
+    const r = await fetch("/api/auth", { method: "POST", headers: { authorization: "Bearer " + tok } });
+    if (!r.ok) { $("#psyLoginNote").textContent = "Kalit noto'g'ri."; return; }
+    store.set("psyToken", tok); location.reload();
+  } catch { $("#psyLoginNote").textContent = "Server bilan bog'lanib bo'lmadi."; }
+});
+$("#psyLogoutBtn").onclick = () => { try { localStorage.removeItem("ruhai.psyToken"); } catch {} location.reload(); };
+syncConsentUI();
+initDb();
+})();
+</script>
+
+</body>
+</html>
