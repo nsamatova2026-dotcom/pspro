@@ -4,8 +4,17 @@ compatibility_date = "2025-09-01"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-AI_MODEL = "claude-opus-5-5"
-AI_DAILY_LIMIT = "100"
+# AI provayderi: "workers-ai" (bepul, kalitsiz), "gemini" (bepul tarif, GEMINI_API_KEY),
+# "anthropic" (pullik, ANTHROPIC_API_KEY). Bo'sh qoldirilsa, mavjud kalitga qarab tanlanadi.
+AI_PROVIDER = "workers-ai"
+WORKERS_AI_MODEL = "@cf/google/gemma-3-12b-it"
+GEMINI_MODEL = "gemini-2.5-flash"
+ANTHROPIC_MODEL = "claude-opus-5-5"
+AI_DAILY_LIMIT = "50"
+
+# Cloudflare Workers AI — bepul kunlik limit bilan, alohida kalit talab qilmaydi
+[ai]
+binding = "AI"
 
 # `npx wrangler d1 create ruhai-db` buyrug'i bergan database_id ni shu yerga qo'ying
 [[d1_databases]]

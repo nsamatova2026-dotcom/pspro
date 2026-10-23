@@ -1043,7 +1043,7 @@ async function initDb() {
     const health = await apiAvailable();
     if (!health) return offline("Server ulanmagan · natijalar shu brauzerda");
     backend = "cf";
-    $("#chatNote").textContent = health.ai ? "Suhbat platforma serveri orqali Claude AI bilan ishlaydi. Suhbat matni saqlanmaydi." : "AI suhbatdosh serverda hali sozlanmagan.";
+    $("#chatNote").textContent = health.ai ? "Suhbat platforma serveridagi AI orqali ishlaydi. Suhbat matni saqlanmaydi." : "AI suhbatdosh serverda hali sozlanmagan.";
     if (!health.db) return offline("Serverda ma'lumotlar bazasi sozlanmagan · natijalar shu brauzerda");
     ({ db, user } = cfBackend());
   }

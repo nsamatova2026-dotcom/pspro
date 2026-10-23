@@ -1,54 +1,110 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { HttpError, handle, json, participantId, readJson } from "../../server/lib.js";
+import { HttpError, handle, json, participantId, pickProvider, readJson } from "../../server/lib.js";
 
 const MAX_CHARS = 60000;
+const MAX_OUTPUT = 4096;
 const SYSTEM =
   "Sen RuhAI platformasining bir qismisan: o'zbekistonlik talabalar uchun psixologik qo'llab-quvvatlash va psixolog uchun yordamchi vosita. " +
-  "Foydalanuvchi so'ragan formatga qat'iy amal qil. Tashxis qo'yma va dori tavsiya qilma.";
+  "Javoblarni o'zbek tilida (lotin yozuvida) ber. Foydalanuvchi so'ragan formatga qat'iy amal qil. Tashxis qo'yma va dori tavsiya qilma.";
 
-// Sahifa yuboradigan { input, tier } so'rovini Claude'ga uzatadi; API kaliti faqat serverda saqlanadi
+// Sahifa yuboradigan { input, tier } so'rovini tanlangan AI provayderiga uzatadi; kalitlar faqat serverda saqlanadi
 export const onRequestPost = handle(async ({ request, env }) => {
-  if (!env.ANTHROPIC_API_KEY) throw new HttpError(503, "ai_not_configured");
+  const provider = pickProvider(env);
+  if (!provider) throw new HttpError(503, "ai_not_configured");
   participantId(request);
   const body = await readJson(request, 300 * 1024);
   const messages = toMessages(body.input);
   await rateLimit(env, request);
-
-  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
-  let response;
-  try {
-    response = await client.beta.messages.create({
-      model: env.AI_MODEL || "claude-opus-5-5",
-      max_tokens: 8000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      output_config: { effort: body.tier === "quick" ? "low" : "medium" },
-      system: SYSTEM,
-      messages,
-    });
-  } catch (e) {
-    if (e instanceof Anthropic.RateLimitError) throw new HttpError(429, "rate_limited");
-    if (e instanceof Anthropic.AuthenticationError) {
-      console.error("ANTHROPIC_API_KEY noto'g'ri yoki bekor qilingan");
-      throw new HttpError(503, "ai_not_configured");
-    }
-    if (e instanceof Anthropic.BadRequestError) {
-      console.error("Claude API so'rovni rad etdi:", e.message);
-      throw new HttpError(400, "bad_request");
-    }
-    if (e instanceof Anthropic.APIError) {
-      console.error(`Claude API xatosi ${e.status}:`, e.message);
-      throw new HttpError(502, "ai_unavailable");
-    }
-    throw e;
-  }
-
-  if (response.stop_reason === "refusal") throw new HttpError(422, "refused");
-  const text = response.content.filter((b) => b.type === "text").map((b) => b.text).join("");
-  return json({ text, truncated: response.stop_reason === "max_tokens" });
+  const { text, truncated } = await PROVIDERS[provider](env, messages, body.tier);
+  return json({ text, truncated, provider });
 });
 
-// Matn yoki suhbat navbatlarini Messages API formatiga keltiradi; ketma-ket bir xil roldagi xabarlar birlashtiriladi
+const PROVIDERS = {
+  // Cloudflare Workers AI: wrangler.toml dagi [ai] bog'lanishi orqali, kalitsiz, kunlik bepul limit bilan
+  async "workers-ai"(env, messages) {
+    let out;
+    try {
+      out = await env.AI.run(env.WORKERS_AI_MODEL || "@cf/google/gemma-3-12b-it", {
+        messages: [{ role: "system", content: SYSTEM }, ...messages],
+        max_tokens: MAX_OUTPUT,
+      });
+    } catch (e) {
+      console.error("Workers AI xatosi:", e?.message || e);
+      if (/limit|quota|allocation|exceeded/i.test(String(e?.message))) throw new HttpError(429, "daily_limit");
+      throw new HttpError(502, "ai_unavailable");
+    }
+    const text = typeof out?.response === "string" ? out.response : "";
+    if (!text) throw new HttpError(502, "ai_unavailable");
+    return { text, truncated: false };
+  },
+
+  // Google Gemini API: GEMINI_API_KEY (Google AI Studio'da bepul olinadi)
+  async gemini(env, messages) {
+    const model = env.GEMINI_MODEL || "gemini-2.5-flash";
+    const generationConfig = { maxOutputTokens: MAX_OUTPUT };
+    // Flash modellarida «o'ylash» bosqichini o'chiramiz: bepul limit tejaladi va javob tezroq keladi
+    if (model.includes("flash")) generationConfig.thinkingConfig = { thinkingBudget: 0 };
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM }] },
+        contents: messages.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
+        generationConfig,
+      }),
+    });
+    if (r.status === 429) throw new HttpError(429, "rate_limited");
+    if (!r.ok) {
+      console.error(`Gemini xatosi ${r.status}:`, (await r.text()).slice(0, 500));
+      if (r.status === 400 || r.status === 401 || r.status === 403) throw new HttpError(503, "ai_not_configured");
+      throw new HttpError(502, "ai_unavailable");
+    }
+    const data = await r.json();
+    const cand = data.candidates?.[0];
+    if (!cand) throw new HttpError(data.promptFeedback?.blockReason ? 422 : 502, data.promptFeedback?.blockReason ? "refused" : "ai_unavailable");
+    if (cand.finishReason === "SAFETY") throw new HttpError(422, "refused");
+    const text = (cand.content?.parts || []).map((p) => p.text || "").join("");
+    if (!text) throw new HttpError(502, "ai_unavailable");
+    return { text, truncated: cand.finishReason === "MAX_TOKENS" };
+  },
+
+  // Anthropic Claude API (pullik): ANTHROPIC_API_KEY
+  async anthropic(env, messages, tier) {
+    const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+    let response;
+    try {
+      response = await client.beta.messages.create({
+        model: env.ANTHROPIC_MODEL || "claude-opus-5-5",
+        max_tokens: 8000,
+        betas: ["server-side-fallback-2026-07-01"],
+        fallbacks: "default",
+        output_config: { effort: tier === "quick" ? "low" : "medium" },
+        system: SYSTEM,
+        messages,
+      });
+    } catch (e) {
+      if (e instanceof Anthropic.RateLimitError) throw new HttpError(429, "rate_limited");
+      if (e instanceof Anthropic.AuthenticationError) {
+        console.error("ANTHROPIC_API_KEY noto'g'ri yoki bekor qilingan");
+        throw new HttpError(503, "ai_not_configured");
+      }
+      if (e instanceof Anthropic.BadRequestError) {
+        console.error("Claude API so'rovni rad etdi:", e.message);
+        throw new HttpError(400, "bad_request");
+      }
+      if (e instanceof Anthropic.APIError) {
+        console.error(`Claude API xatosi ${e.status}:`, e.message);
+        throw new HttpError(502, "ai_unavailable");
+      }
+      throw e;
+    }
+    if (response.stop_reason === "refusal") throw new HttpError(422, "refused");
+    const text = response.content.filter((b) => b.type === "text").map((b) => b.text).join("");
+    return { text, truncated: response.stop_reason === "max_tokens" };
+  },
+};
+
+// Matn yoki suhbat navbatlarini umumiy formatga keltiradi; ketma-ket bir xil roldagi xabarlar birlashtiriladi
 function toMessages(input) {
   const list = typeof input === "string" ? [{ role: "user", content: input }] : input;
   if (!Array.isArray(list) || !list.length) throw new HttpError(400, "bad_input");
@@ -66,7 +122,7 @@ function toMessages(input) {
   return out;
 }
 
-// IP manzil bo'yicha kunlik limit: API xarajatini nazorat qilish uchun
+// IP manzil bo'yicha kunlik limit: bepul kvotani bir kishi tugatib qo'ymasligi uchun
 async function rateLimit(env, request) {
   if (!env.DB) return;
   const limit = Number(env.AI_DAILY_LIMIT || 100);

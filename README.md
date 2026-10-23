@@ -26,7 +26,7 @@ Dissertatsiya mavzusi, vazifalari va gipotezalari: [docs/dissertatsiya-mavzusi.m
 | **Tadqiqotlarim** | Kod yoki havola orqali tadqiqotga qo'shilish, rozilik, ochilgan o'lchovlar va tayinlangan treyninglar ro'yxati, tadqiqotdan chiqish (javoblar o'chiriladi) |
 | **Testlar** | Bankdagi istalgan shkala bilan o'z-o'zini baholash va natijalar tarixi |
 | **Treyninglar** | 12 ta mashq: taymerli nafas mashqlari, bosqichli va yozma KXT mashqlari; mashqdan oldin va keyin kayfiyat bahosi |
-| **Kundalik**, **Suhbatdosh** | Kunlik holat, AI matn tahlili, KXT asosidagi AI-suhbatdosh |
+| **Kundalik**, **Suhbatdosh** | Kunlik holat, AI matn tahlili, KXT asosidagi AI-suhbatdosh (bepul Workers AI yoki Gemini orqali) |
 
 ### Instrumentlar banki
 | Metodika | Soha | Savollar |
@@ -64,14 +64,25 @@ Buyruq bergan `database_id` ni [`wrangler.toml`](wrangler.toml) faylidagi `datab
 npm run db:init
 ```
 
-### 3. Loyiha va maxfiy kalitlar
+### 3. Loyiha va maxfiy kalit
 ```bash
 npx wrangler pages project create ruhai --production-branch main
 npx wrangler pages secret put PSY_TOKEN --project-name ruhai
-npx wrangler pages secret put ANTHROPIC_API_KEY --project-name ruhai
 ```
-- `PSY_TOKEN` — psixolog va tadqiqotchi kiradigan maxfiy kalit. Uzun tasodifiy satr tanlang, masalan `openssl rand -hex 24` buyrug'i bilan.
-- `ANTHROPIC_API_KEY` — AI-suhbatdosh, kundalik tahlili va AI xulosa uchun Claude API kaliti ([console.anthropic.com](https://console.anthropic.com)). Kiritilmasa, AI funksiyalari o'chadi, qolgan hammasi ishlaydi.
+`PSY_TOKEN` — psixolog va tadqiqotchi kiradigan maxfiy kalit. Uzun tasodifiy satr tanlang, masalan `openssl rand -hex 24` buyrug'i bilan.
+
+### AI provayderi (bepul variantlar)
+AI-suhbatdosh, kundalik tahlili va psixolog uchun AI xulosa quyidagi provayderlardan biri bilan ishlaydi. Provayder [`wrangler.toml`](wrangler.toml) dagi `AI_PROVIDER` qatorida tanlanadi.
+
+| Provayder | Narxi | Nima kerak | Izoh |
+|---|---|---|---|
+| `workers-ai` (standart) | Bepul: kuniga 10 000 «neyron» | Hech narsa — Cloudflare hisobiga kiritilgan | Standart model `@cf/google/gemma-3-12b-it`. O'zbek tilida javob sifati o'rtacha |
+| `gemini` | Bepul tarif (daqiqalik va kunlik limit bilan) | [Google AI Studio](https://aistudio.google.com/apikey)da bepul kalit | O'zbek tilini yaxshiroq tushunadi. Kalitni kiriting: `npx wrangler pages secret put GEMINI_API_KEY --project-name ruhai` |
+| `anthropic` | Pullik | `ANTHROPIC_API_KEY` | Eng yuqori sifat |
+
+Bepul limit tugasa, platforma AI so'rovlariga «Bugungi limit tugadi» deb javob beradi; testlar, treyninglar va tadqiqotlar AI'siz ham to'liq ishlaydi.
+
+**Maxfiylik bo'yicha muhim eslatma.** Google'ning bepul tarif shartlariga ko'ra, bepul Gemini API'ga yuborilgan ma'lumotlar Google mahsulotlarini yaxshilash uchun ishlatilishi mumkin. Respondentlarning kundalik yozuvlari va suhbatlari sezgir psixologik ma'lumot bo'lgani uchun, haqiqiy tadqiqotda Workers AI yoki pullik tarifni tanlang yoki rozilik matnida buni respondentlarga aniq ayting.
 
 ### 4. Joylash
 ```bash
@@ -79,13 +90,16 @@ npm run deploy
 ```
 Sayt `https://ruhai.pages.dev` ko'rinishidagi manzilda ochiladi.
 
-**Muqobil yo'l (GitHub orqali avtomatik):** Cloudflare panelida *Workers & Pages → Create → Pages → Connect to Git* orqali shu repozitoriyni ulang. Build command bo'sh, build output directory `public`. *Settings → Bindings* bo'limida D1 bazasini `DB` nomi bilan bog'lang, *Settings → Variables and Secrets* bo'limida `PSY_TOKEN` va `ANTHROPIC_API_KEY` ni kiriting. Shundan keyin `main` branchga har bir push saytni avtomatik yangilaydi.
+**Muqobil yo'l (GitHub orqali avtomatik):** Cloudflare panelida *Workers & Pages → Create → Pages → Connect to Git* orqali shu repozitoriyni ulang. Build command bo'sh, build output directory `public`. *Settings → Bindings* bo'limida D1 bazasini `DB` nomi bilan va Workers AI'ni `AI` nomi bilan bog'lang, *Settings → Variables and Secrets* bo'limida `PSY_TOKEN` ni (Gemini ishlatsangiz `GEMINI_API_KEY` ni ham) kiriting. Shundan keyin `main` branchga har bir push saytni avtomatik yangilaydi.
 
 ### Sozlamalar
 | O'zgaruvchi | Vazifasi | Standart qiymat |
 |---|---|---|
-| `AI_MODEL` | Claude modeli | `claude-opus-5-5` |
-| `AI_DAILY_LIMIT` | Bitta IP manzildan kunlik AI so'rovlari soni (xarajatni nazorat qilish) | `100` |
+| `AI_PROVIDER` | `workers-ai`, `gemini` yoki `anthropic`; bo'sh bo'lsa, mavjud kalitga qarab tanlanadi | `workers-ai` |
+| `WORKERS_AI_MODEL` | Workers AI modeli | `@cf/google/gemma-3-12b-it` |
+| `GEMINI_MODEL` | Gemini modeli | `gemini-2.5-flash` |
+| `ANTHROPIC_MODEL` | Claude modeli | `claude-opus-5-5` |
+| `AI_DAILY_LIMIT` | Bitta IP manzildan kunlik AI so'rovlari soni (bepul kvotani tejash) | `50` |
 
 ### Mahalliy ishga tushirish
 ```bash
@@ -93,6 +107,7 @@ cp .dev.vars.example .dev.vars   # kalitlarni kiriting
 npm run db:init:local
 npm run dev                      # http://localhost:8788
 ```
+Workers AI har doim Cloudflare serverlarida ishlaydi, shuning uchun mahalliy rejimda ham `npx wrangler login` qilingan bo'lishi kerak.
 
 ## Foydalanish tartibi
 
@@ -112,7 +127,7 @@ npm run dev                      # http://localhost:8788
 | `GET /api/studies`, `PUT/DELETE /api/studies/:id` | tadqiqotchi | Tadqiqotlarni boshqarish |
 | `GET /api/panel`, `GET/PATCH /api/panel/:id` | tadqiqotchi | Respondentlar ma'lumotlari, xavf signalini ko'rib chiqish |
 | `POST /api/auth` | tadqiqotchi | Kalitni tekshirish |
-| `POST /api/ai` | respondent | Claude AI so'rovi |
+| `POST /api/ai` | respondent | AI so'rovi (tanlangan provayder orqali) |
 
 Tadqiqotchi so'rovlari `Authorization: Bearer <PSY_TOKEN>` sarlavhasini talab qiladi.
 
@@ -122,7 +137,7 @@ Tadqiqotchi so'rovlari `Authorization: Bearer <PSY_TOKEN>` sarlavhasini talab qi
 - Tadqiqotga qo'shilish rozilik matnini tasdiqlashni talab qiladi. Respondent istalgan vaqtda chiqib ketishi mumkin, bu holda uning tadqiqotdagi javoblari o'chiriladi.
 - Yozma treyninglarning matni faqat respondent qurilmasida qoladi; tadqiqotchi mashq bajarilganini va kayfiyat ko'rsatkichlarini ko'radi.
 - Suhbat matni saqlanmaydi, faqat xavf signali sanasi qayd etiladi.
-- Claude API kaliti faqat serverda saqlanadi va brauzerga yuborilmaydi.
+- AI kalitlari faqat serverda saqlanadi va brauzerga yuborilmaydi.
 
 ## Cheklovlar
 

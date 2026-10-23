@@ -103,3 +103,12 @@ export function validateStudy(body, id) {
   if (typeof body.title !== "string" || !body.title.trim()) throw new HttpError(400, "bad_title");
   return { ...body, id };
 }
+
+// AI provayderini tanlash: AI_PROVIDER aniq ko'rsatilgan bo'lsa shu, aks holda mavjud kalitga qarab.
+// Workers AI (Cloudflare, bepul kunlik limit) va Gemini (Google, bepul tarif) — bepul variantlar.
+export function pickProvider(env) {
+  const ready = { anthropic: !!env.ANTHROPIC_API_KEY, gemini: !!env.GEMINI_API_KEY, "workers-ai": !!env.AI };
+  const wanted = (env.AI_PROVIDER || "").trim().toLowerCase();
+  if (wanted) return ready[wanted] ? wanted : null;
+  return ["anthropic", "gemini", "workers-ai"].find((p) => ready[p]) || null;
+}

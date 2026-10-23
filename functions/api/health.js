@@ -1,5 +1,7 @@
-import { json } from "../../server/lib.js";
+import { json, pickProvider } from "../../server/lib.js";
 
 // Sahifa server mavjudligini va qaysi imkoniyatlar sozlanganini shu yerdan bilib oladi
-export const onRequestGet = ({ env }) =>
-  json({ ok: true, ai: !!env.ANTHROPIC_API_KEY, db: !!env.DB, psychologist: !!env.PSY_TOKEN });
+export const onRequestGet = ({ env }) => {
+  const provider = pickProvider(env);
+  return json({ ok: true, ai: !!provider, provider, db: !!env.DB, psychologist: !!env.PSY_TOKEN });
+};
