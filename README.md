@@ -13,10 +13,14 @@ Dissertatsiya mavzusi, vazifalari va gipotezalari: [docs/dissertatsiya-mavzusi.m
 |---|---|
 | **Tadqiqotlar** | Tadqiqot konstruktori: metodikalarni tanlash, o'lchov to'lqinlari (T0, T1, T2… va ochilish kuni), bir, ikki yoki uch guruhli dizayn, har bir guruhga treyninglar tayinlash, xabardor qilingan rozilik matni, qo'shilish kodi va taklif havolasi |
 | | Respondentlar jadvali: guruh, har bir to'lqin bo'yicha bajarilish, treyninglar soni, oxirgi faollik, xavf signali; respondent tafsilotlari |
+| | Muvozanatlashtirilgan randomizatsiya: yangi respondent eng kam to'lgan guruhga tushadi (yoki oddiy tasodifiy taqsimlash) |
 | | Statistika: n, M (SD) umumiy va guruhlar bo'yicha, Kronbax α, guruhlar farqi (Welch t-testi, Koen d), T0 dan tanlangan to'lqingacha o'zgarish, korrelyatsiya matritsasi, tanlanma tavsifi, treyninglar samarasi |
+| | Savollar tahlili (validatsiya uchun): har bir savolning M va SD, savol – qolgan ball korrelyatsiyasi, «savol olib tashlansa α»; muammoli savollar belgilanadi |
+| | APA uslubidagi natijalar matni: tanlanma, ishonchlilik, guruhlar farqi, o'zgarish va korrelyatsiyalar bo'yicha avtomatik tuzilgan matn |
 | | Eksport: respondent × to'lqin formatidagi CSV (har bir savolning xom javobi, umumiy ball, subshkalalar, demografiya) va treyninglar jurnali — SPSS, R, Excel uchun |
 | | Namuna rejimi: 80 respondentlik simulyatsiya qilingan ma'lumotlarda barcha tahlillarni ko'rish |
 | **Instrumentlar banki** | Har bir metodikaning savollari, javob shkalasi, hisoblash qoidasi, teskari savollar, subshkalalar, talqin chegaralari, manba va foydalanish shartlari |
+| | Muallif metodikasi konstruktori: o'z so'rovnomangizni (savollar, javob shkalasi, teskari savollar, subshkalalar, talqin chegaralari) yaratib, tadqiqotlarda ishlatish |
 | **Psixolog paneli** | Umumiy rozilik bergan talabalar monitoringi, xavf signallari, AI xulosa |
 | **Gipotezalar** | Randomizatsiya vositasi va H2/H3 gipotezalarini tekshirish |
 
@@ -43,7 +47,7 @@ Dissertatsiya mavzusi, vazifalari va gipotezalari: [docs/dissertatsiya-mavzusi.m
 
 Treyninglar: 4-7-8 nafas, kvadrat nafas, 5-4-3-2-1 yerga tayanish, fikrlar kundaligi, progressiv mushak relaksatsiyasi, uchta yaxshi narsa, xulq-atvorni faollashtirish, muammoni hal qilish, o'ziga mehr ko'rsatish, uyqu gigiyenasi, xavotir vaqti, imtihon xavotirini boshqarish.
 
-Yangi metodika yoki treyning qo'shish uchun [`public/js/banks.js`](public/js/banks.js) fayliga xuddi shu tuzilishda yozuv qo'shing.
+O'z metodikangizni **Instrumentlar banki → Muallif metodikasi yaratish** bo'limida kod yozmasdan qo'shishingiz mumkin. Standart bankni kengaytirish uchun [`public/js/banks.js`](public/js/banks.js) fayliga xuddi shu tuzilishda yozuv qo'shing.
 
 ## Cloudflare'ga joylash
 
@@ -111,6 +115,9 @@ npm run dev                      # http://localhost:8787
 | `GET/PUT /api/me` | respondent | O'z hujjati (`x-participant-id` sarlavhasi bilan) |
 | `GET /api/studies/code/:code` | hamma | Faol tadqiqotni kod bo'yicha topish |
 | `GET /api/studies/:id` | respondent | Tadqiqot ma'lumoti (qoralama yashirin) |
+| `POST /api/studies/:id/assign` | respondent | Muvozanatlashtirilgan randomizatsiya: guruhni tanlash |
+| `GET /api/instruments` | hamma | Muallif metodikalari ro'yxati |
+| `PUT/DELETE /api/instruments/:id` | tadqiqotchi | Muallif metodikasini saqlash yoki o'chirish |
 | `GET /api/studies`, `PUT/DELETE /api/studies/:id` | tadqiqotchi | Tadqiqotlarni boshqarish |
 | `GET /api/panel`, `GET/PATCH /api/panel/:id` | tadqiqotchi | Respondentlar ma'lumotlari, xavf signalini ko'rib chiqish |
 | `POST /api/auth` | tadqiqotchi | Kalitni tekshirish |
@@ -130,7 +137,9 @@ Tadqiqotchi so'rovlari `Authorization: Bearer <PSY_TOKEN>` sarlavhasini talab qi
 
 - Metodikalarning o'zbekcha matnlari ishchi tarjima. Ilmiy tadqiqotda qo'llashdan oldin teskari tarjima va psixometrik validatsiya talab etiladi.
 - «AI'ga ishonch» shkalasi muallif ishlanmasi va omilli tahlil orqali tekshirilishi kerak.
-- Guruhlarga taqsimlash oddiy tasodifiy usulda bajariladi; kichik tanlanmalarda guruhlar soni teng bo'lmasligi mumkin.
+- Muvozanatlashtirilgan randomizatsiya Cloudflare serverida ishlaydi. Bir vaqtda qo'shilgan respondentlar bitta guruhga tushishi mumkin, shuning uchun guruhlar orasida 1–2 kishilik farq bo'lishi tabiiy.
+- Muallif metodikalari psixometrik validatsiyadan o'tmagan; «Savollar tahlili» va Kronbax α validatsiyaning faqat birinchi qadami (omilli tahlil uchun ma'lumotlarni eksport qiling).
+- APA matni avtomatik tuziladi: raqamlarni tekshirib, talqinni o'zingiz to'ldiring.
 - Uch guruhli dizaynda platforma birinchi ikki guruhni solishtiradi; to'liq tahlil uchun ma'lumotlarni eksport qilib, ANOVA o'tkazing.
 - Haqiqiy tadqiqotdan oldin etika qo'mitasi ruxsati talab etiladi.
 - RuhAI tashxis qo'ymaydi va psixologni almashtirmaydi. Shoshilinch holatda: **103** (tez yordam) yoki **112**.

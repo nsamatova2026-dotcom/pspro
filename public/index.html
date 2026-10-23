@@ -256,6 +256,10 @@ details.bank-card[open] summary { margin-bottom: 10px; }
 #studyExport summary { cursor: pointer; padding-block: 4px; }
 .corr td, .corr th { text-align: center; }
 .tablewrap.tall { max-height: 520px; overflow: auto; }
+.apa-text { white-space: pre-wrap; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; line-height: 1.65; max-width: 80ch; }
+#studyStats details { border-top: 1px solid var(--line); padding-block: 8px; }
+#studyStats details summary { cursor: pointer; }
+#studyStats details[open] summary { margin-bottom: 8px; }
 .tablewrap.tall thead th { position: sticky; top: 0; background: var(--surface); }
 @media (max-width: 720px) {
   .form-grid { grid-template-columns: 1fr; }
@@ -366,7 +370,7 @@ details.bank-card[open] summary { margin-bottom: 10px; }
         <h2>Metodikalar va treyninglar</h2>
         <p class="lead">Har bir metodika uchun savollar, javob shkalasi, hisoblash qoidasi, talqin chegaralari, manba va foydalanish shartlari. O'zbekcha matnlar ishchi tarjima: tadqiqotda qo'llashdan oldin teskari tarjima va validatsiya talab etiladi.</p>
       </div>
-      <div class="seg" role="group" aria-label="Bank bo'limi"><button type="button" id="bankTabI" aria-pressed="true">Psixodiagnostik metodikalar</button><button type="button" id="bankTabT" aria-pressed="false">Treyninglar</button></div>
+      <div class="seg" role="group" aria-label="Bank bo'limi"><button type="button" id="bankTabI" aria-pressed="true">Psixodiagnostik metodikalar</button><button type="button" id="bankTabT" aria-pressed="false">Treyninglar</button><button type="button" id="bankTabC" aria-pressed="false" hidden>Muallif metodikasi yaratish</button></div>
       <div class="stack" id="bankList" style="gap: 10px;"></div>
     </section>
 
@@ -590,7 +594,9 @@ window.addEventListener("hashchange", () => { const v = location.hash.slice(1); 
 /* ---------- Instrumentlar banki va test dvigateli ---------- */
 const { INSTRUMENTS, TRAININGS } = window.RUHAI_BANKS;
 const TESTS = INSTRUMENTS;
-const DOMAINS = [...new Set(Object.values(INSTRUMENTS).map(t => t.domain))];
+let DOMAINS = [];
+const computeDomains = () => { DOMAINS = [...new Set(Object.values(INSTRUMENTS).map(t => t.domain))]; };
+computeDomains();
 const isForm = id => INSTRUMENTS[id]?.type === "form";
 const CLINICAL = new Set(["phq", "gad", "pss", "who5", "ucla3"]);
 const CLINICAL_ADVICE = {
@@ -676,10 +682,14 @@ const SOS_HTML = `<div class="sos"><h3>Siz yolg'iz emassiz</h3><p>Javoblaringizd
   <p class="note">Rozilik bergan yoki tadqiqotda ishtirok etayotgan bo'lsangiz, psixolog xavf signalini ko'radi.</p></div>`;
 
 // Testlar bo'limi: bankdagi istalgan shkala bilan o'z-o'zini baholash
-$("#instSelect").innerHTML = DOMAINS.map(d => {
-  const ids = Object.keys(INSTRUMENTS).filter(id => INSTRUMENTS[id].domain === d && !isForm(id));
-  return ids.length ? `<optgroup label="${esc(d)}">${ids.map(id => `<option value="${id}">${esc(INSTRUMENTS[id].name)} · ${esc(INSTRUMENTS[id].full)}</option>`).join("")}</optgroup>` : "";
-}).join("");
+function fillInstSelect() {
+  $("#instSelect").innerHTML = DOMAINS.map(d => {
+    const ids = Object.keys(INSTRUMENTS).filter(id => INSTRUMENTS[id].domain === d && !isForm(id));
+    return ids.length ? `<optgroup label="${esc(d)}">${ids.map(id => `<option value="${id}">${esc(INSTRUMENTS[id].name)} · ${esc(INSTRUMENTS[id].full)}</option>`).join("")}</optgroup>` : "";
+  }).join("");
+  if (INSTRUMENTS[cur]) $("#instSelect").value = cur;
+}
+fillInstSelect();
 function renderTest() {
   const t = INSTRUMENTS[cur];
   $("#instSelect").value = cur;
@@ -775,6 +785,7 @@ function cfBackend() {
     const [col, id] = path.split("/");
     if (col === "participants") return id === pid ? "/api/me" : "/api/panel/" + encodeURIComponent(id);
     if (col === "studies") return "/api/studies/" + encodeURIComponent(id);
+    if (col === "instruments") return "/api/instruments/" + encodeURIComponent(id);
     throw { code: "invalid_argument" };
   };
   const db = {
@@ -789,7 +800,7 @@ function cfBackend() {
       };
     },
     collection(name) {
-      const url = name === "participants" ? "/api/panel" : name === "studies" ? "/api/studies" : null;
+      const url = { participants: "/api/panel", studies: "/api/studies", instruments: "/api/instruments" }[name];
       return {
         onSnapshot(next, err) {
           return poll(async () => {
@@ -1593,7 +1604,11 @@ $("#joinInfo").addEventListener("click", async e => {
   if (e.target.id !== "joinBtn") return;
   const st = joinCandidate; e.target.disabled = true;
   const arms = st.arms?.length ? st.arms : [{ id: "A" }];
-  const arm = arms[Math.floor(Math.random() * arms.length)].id; // oddiy randomizatsiya
+  let arm = null;
+  if (backend === "cf" && arms.length > 1 && (st.randomization || "balanced") === "balanced") {
+    try { arm = (await api(`/api/studies/${encodeURIComponent(st.id)}/assign`, { method: "POST" })).arm; } catch {}
+  }
+  if (!arm) arm = arms[Math.floor(Math.random() * arms.length)].id; // oddiy randomizatsiya
   try {
     await writeMine(d => { d.studies ??= {}; d.studies[st.id] = { joinedAt: Date.now(), consentAt: Date.now(), arm, responses: [], trainings: [] }; });
     joinCandidate = null; renderJoinCandidate(); $("#joinCode").value = "";
@@ -1693,7 +1708,7 @@ const genCode = () => Array.from({ length: 6 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ2
 function newStudy() {
   return {
     id: "s-" + Math.random().toString(36).slice(2, 10), code: genCode(), title: "", description: "", consent: DEFAULT_CONSENT,
-    status: "draft", showResults: true, instruments: ["demo", "phq", "gad"],
+    status: "draft", showResults: true, randomization: "balanced", instruments: ["demo", "phq", "gad"],
     waves: [{ id: "T0", label: "T0 · boshlang'ich", day: 0 }, { id: "T1", label: "T1 · oraliq", day: 28 }, { id: "T2", label: "T2 · yakuniy", day: 56 }],
     arms: [{ id: "E", name: "Eksperimental guruh", trainings: ["breath478", "thought", "activation"] }, { id: "N", name: "Nazorat guruhi", trainings: [] }],
     createdAt: Date.now()
@@ -1757,6 +1772,7 @@ function renderEditor() {
       <label class="field wide" for="esConsent">Xabardor qilingan rozilik matni<textarea id="esConsent" rows="5">${esc(s.consent)}</textarea></label>
       <label class="field" for="esCode">Qo'shilish kodi (4–12 lotin harf yoki raqam)<input id="esCode" class="inp num" value="${esc(s.code)}" maxlength="12"></label>
       <label class="field" for="esStatus">Holati<select id="esStatus">${[["draft", "Qoralama"], ["active", "Faol: respondentlar qo'shila oladi"], ["closed", "Yakunlangan"]].map(([v, l]) => `<option value="${v}"${s.status === v ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+      <label class="field" for="esRand">Guruhlarga taqsimlash<select id="esRand"><option value="balanced"${(s.randomization || "balanced") === "balanced" ? " selected" : ""}>Muvozanatlashtirilgan: guruhlar teng to'ladi</option><option value="simple"${s.randomization === "simple" ? " selected" : ""}>Oddiy tasodifiy</option></select></label>
       <label class="check wide" for="esShow"><input type="checkbox" id="esShow"${s.showResults ? " checked" : ""}><span>Respondentga test natijasi va talqinini ko'rsatish</span></label>
     </div>
     <div class="row" style="justify-content:space-between"><h4>Metodikalar</h4><span class="note" id="esTime"></span></div>
@@ -1766,7 +1782,7 @@ function renderEditor() {
     ${waves}<div><button type="button" class="btn small" data-wave-add>To'lqin qo'shish</button></div>
     <h4>Dizayn: guruhlar va treyninglar</h4>
     <div class="seg" role="group" aria-label="Guruhlar soni">${[1, 2, 3].map(n => `<button type="button" data-arms="${n}" aria-pressed="${s.arms.length === n}">${["Bir guruhli", "Ikki guruh (RNT)", "Uch guruh"][n - 1]}</button>`).join("")}</div>
-    <p class="note">Respondentlar guruhlarga tasodifiy taqsimlanadi. Har bir guruhga tayinlangan treyninglar respondentning topshiriqlar ro'yxatida ko'rinadi.${hasData ? " Diqqat: tadqiqotda allaqachon ma'lumot bor, guruhlar va to'lqinlarni o'zgartirish tahlilni buzishi mumkin." : ""}</p>
+    <p class="note">Respondentlar guruhlarga tasodifiy taqsimlanadi; muvozanatlashtirilgan usulda yangi respondent eng kam to'lgan guruhga tushadi (Cloudflare serverida). Har bir guruhga tayinlangan treyninglar respondentning topshiriqlar ro'yxatida ko'rinadi.${hasData ? " Diqqat: tadqiqotda allaqachon ma'lumot bor, guruhlar va to'lqinlarni o'zgartirish tahlilni buzishi mumkin." : ""}</p>
     ${arms}
     <div class="row" style="justify-content:space-between"><span class="note" id="esMsg"></span><div class="row" id="esActions">${exists ? `<button type="button" class="btn danger" data-ed-del>O'chirish</button>` : ""}<button type="button" class="btn primary" data-ed-save>Saqlash</button></div></div>`;
   updateEstTime();
@@ -1774,7 +1790,7 @@ function renderEditor() {
 function collectEditor() {
   const s = editing, box = $("#studyEditor");
   s.title = $("#esTitle").value.trim(); s.description = $("#esDesc").value.trim(); s.consent = $("#esConsent").value.trim();
-  s.code = $("#esCode").value.trim().toUpperCase(); s.status = $("#esStatus").value; s.showResults = $("#esShow").checked;
+  s.code = $("#esCode").value.trim().toUpperCase(); s.status = $("#esStatus").value; s.showResults = $("#esShow").checked; s.randomization = $("#esRand").value;
   s.instruments = Object.keys(INSTRUMENTS).filter(id => box.querySelector(`[data-inst="${id}"]`)?.checked);
   s.waves.forEach((w, i) => { w.label = box.querySelector(`[data-wave-label="${i}"]`).value.trim() || w.id; w.day = Math.max(0, +box.querySelector(`[data-wave-day="${i}"]`).value || 0); });
   s.arms.forEach((a, i) => { a.name = box.querySelector(`[data-arm-name="${i}"]`).value.trim() || a.id; a.trainings = Object.keys(TRAININGS).filter(id => box.querySelector(`[data-arm-tr="${i}|${id}"]`)?.checked); });
@@ -1931,21 +1947,23 @@ function renderStudyStats() {
   const [A, B] = arms;
   const head = `<div class="row" style="justify-content:space-between"><h3>Statistik tahlil</h3><label class="field" for="statWave">O'lchov<select id="statWave">${st.waves.map(w => `<option value="${esc(w.id)}"${w.id === statWave ? " selected" : ""}>${esc(w.label)}</option>`).join("")}</select></label></div>`;
   if (!scales.length || !rows.length) { box.innerHTML = head + `<p class="note">Tahlil respondentlar javob bera boshlagach paydo bo'ladi.</p>`; return; }
+  const S = {}, pairs = [];
   const desc = scales.map(id => {
     const d = waveData(st, rows, statWave, id), all = d.map(o => o.x.score);
     const byArm = arms.map(a => d.filter(o => o.r.enr.arm === a.id).map(o => o.x.score));
     const mat = d.map(o => itemValues(id, o.x.answers));
     const alpha = mat.length >= 3 && mat[0].length >= 2 ? cronbach(mat) : NaN;
+    S[id] = { all, byArm, mat, alpha };
     let cmp = "—";
     if (B) {
       const a1 = byArm[0], b1 = byArm[1];
-      if (a1.length >= 2 && b1.length >= 2) { const w = welch(a1, b1); cmp = `t(${w.df.toFixed(1)}) = ${w.t.toFixed(2)}, ${fmtP(w.p)}, d = ${w.d.toFixed(2)}`; }
+      if (a1.length >= 2 && b1.length >= 2) { const w = welch(a1, b1); S[id].cmp = w; cmp = `t(${w.df.toFixed(1)}) = ${w.t.toFixed(2)}, ${fmtP(w.p)}, d = ${w.d.toFixed(2)}`; }
     }
     let chg = "";
     if (B && statWave !== w0) {
       const change = arm => rows.filter(r => r.enr.arm === arm.id).map(r => { const s0 = r.enr.responses?.find(y => y.inst === id && y.wave === w0), s1 = r.enr.responses?.find(y => y.inst === id && y.wave === statWave); return s0 && s1 ? s1.score - s0.score : null; }).filter(v => v != null);
       const ca = change(A), cb = change(B);
-      chg = ca.length >= 2 && cb.length >= 2 ? (() => { const w = welch(ca, cb); return `${mean(ca).toFixed(2)} vs ${mean(cb).toFixed(2)}; t(${w.df.toFixed(1)}) = ${w.t.toFixed(2)}, ${fmtP(w.p)}, d = ${w.d.toFixed(2)}`; })() : "—";
+      chg = ca.length >= 2 && cb.length >= 2 ? (() => { const w = welch(ca, cb); S[id].chg = { w, ca, cb }; return `${mean(ca).toFixed(2)} vs ${mean(cb).toFixed(2)}; t(${w.df.toFixed(1)}) = ${w.t.toFixed(2)}, ${fmtP(w.p)}, d = ${w.d.toFixed(2)}`; })() : "—";
     }
     return `<tr><td><b>${esc(INSTRUMENTS[id].name)}</b></td><td class="num">${all.length}</td><td class="num">${ms(all)}</td>${arms.length > 1 ? byArm.map(v => `<td class="num">${ms(v)}</td>`).join("") : ""}<td class="num">${isNaN(alpha) ? "—" : `${alpha.toFixed(2)} <span class="note">${alphaWord(alpha)}</span>`}</td>${B ? `<td class="num formula">${cmp}</td>` : ""}${B && statWave !== w0 ? `<td class="num formula">${chg}</td>` : ""}</tr>`;
   }).join("");
@@ -1958,6 +1976,7 @@ function renderStudyStats() {
       const ids = [...scoreMap[a].keys()].filter(k => scoreMap[b].has(k));
       if (ids.length < 4) return `<td class="note">—</td>`;
       const pr = pearson(ids.map(k => scoreMap[a].get(k)), ids.map(k => scoreMap[b].get(k)));
+      if (!isNaN(pr.r)) pairs.push({ a, b, r: pr.r, p: pr.p });
       return `<td class="num">${isNaN(pr.r) ? "—" : pr.r.toFixed(2) + stars(pr.p)}</td>`;
     }).join("")}</tr>`).join("")}</tbody></table></div><p class="note">* p &lt; 0.05 · ** p &lt; 0.01 · *** p &lt; 0.001</p>`;
   }
@@ -1977,7 +1996,14 @@ function renderStudyStats() {
   box.innerHTML = head + `
     <div class="tablewrap"><table class="history"><thead><tr><th>Metodika</th><th>n</th><th>M (SD)</th>${arms.length > 1 ? arms.map(a => `<th>${esc(a.name)} M (SD)</th>`).join("") : ""}<th>Kronbax α</th>${B ? `<th>${esc(A.name)} va ${esc(B.name)}: Welch t</th>` : ""}${B && statWave !== w0 ? `<th>O'zgarish ${esc(w0)} → ${esc(statWave)}</th>` : ""}</tr></thead><tbody>${desc}</tbody></table></div>
     <p class="note">α ≥ 0.7 qoniqarli ichki muvofiqlikni bildiradi. Guruhlar farqi birinchi ikki guruh orasida hisoblanadi; d — Koen samara hajmi.${arms.length > 2 ? " Uch guruhni solishtirish uchun ma'lumotlarni eksport qilib, dispersion tahlil (ANOVA) o'tkazing." : ""}</p>
-    ${corr}${demoHtml}${trHtml}`;
+    ${corr}${demoHtml}${trHtml}
+    <h4>Savollar tahlili</h4>
+    <p class="note">Savol bilan qolgan savollar yig'indisi orasidagi korrelyatsiya (r) 0.3 dan past bo'lsa yoki savol olib tashlanganda α oshsa, savolni qayta ko'rib chiqish tavsiya etiladi. Bu tahlil metodikalarni validatsiya qilishda ishlatiladi.</p>
+    ${scales.map(id => `<details><summary><b>${esc(INSTRUMENTS[id].name)}</b> <span class="note">n = ${S[id].mat.length}${isNaN(S[id].alpha) ? "" : `, α = ${S[id].alpha.toFixed(2)}`}</span></summary>${itemAnalysisHtml(id, S[id].mat)}</details>`).join("")}
+    <h4>Natijalar matni (APA uslubida)</h4>
+    <div class="apa-text" id="apaText">${esc(apaParagraphs(st, rows, statWave, S, pairs).join("\n\n"))}</div>
+    <div class="row"><button type="button" class="btn" data-copy="apaText">Matnni nusxalash</button><span class="note"></span></div>
+    <p class="note">Matn tanlangan o'lchov bo'yicha avtomatik tuzilgan. Dissertatsiyaga kiritishdan oldin raqamlarni tekshiring va talqinni o'zingiz to'ldiring.</p>`;
 }
 
 // Eksport: SPSS/R uchun keng formatdagi CSV
@@ -2047,10 +2073,14 @@ function simulateRespondents(st, n) {
 /* ---------- Instrumentlar banki ---------- */
 let bankTab = "inst";
 function renderBank() {
-  $("#bankTabI").setAttribute("aria-pressed", bankTab === "inst"); $("#bankTabT").setAttribute("aria-pressed", bankTab === "train");
-  if (bankTab === "inst") {
+  $("#bankTabI").setAttribute("aria-pressed", bankTab === "inst"); $("#bankTabT").setAttribute("aria-pressed", bankTab === "train"); $("#bankTabC").setAttribute("aria-pressed", bankTab === "custom");
+  if (bankTab === "custom") {
+    $("#bankList").innerHTML = customBuilderHtml();
+    fillCustomForm(customEdit ? INSTRUMENTS[customEdit] : null);
+    renderCustomList();
+  } else if (bankTab === "inst") {
     $("#bankList").innerHTML = DOMAINS.map(d => `<h4>${esc(d)}</h4>` + Object.entries(INSTRUMENTS).filter(([, t]) => t.domain === d).map(([id, t]) => `
-      <details class="bank-card"><summary><span><b>${esc(t.name)}</b> · ${esc(t.full)}</span><span class="tags"><span class="tagi num">${totalCount(id)} savol</span><span class="tagi num">${t.minutes} daq</span></span></summary>
+      <details class="bank-card"><summary><span><b>${esc(t.name)}</b> · ${esc(t.full)}${t.custom ? ` <span class="chip neutral">muallif</span>` : ""}</span><span class="tags"><span class="tagi num">${totalCount(id)} savol</span><span class="tagi num">${t.minutes} daq</span></span></summary>
         <div class="bank-body">
           <p>${esc(t.lead)}</p>
           ${isForm(id) ? `<ul>${t.fields.map(f => `<li>${esc(f.label)}${f.options ? ` <span class="note">(${f.options.map(esc).join(" / ")})</span>` : ""}</li>`).join("")}</ul>` : `
@@ -2073,13 +2103,219 @@ function renderBank() {
 }
 $("#bankTabI").onclick = () => { bankTab = "inst"; renderBank(); };
 $("#bankTabT").onclick = () => { bankTab = "train"; renderBank(); };
+$("#bankTabC").onclick = () => { bankTab = "custom"; renderBank(); };
 $("#bankList").addEventListener("click", e => {
   const b = e.target.closest("[data-try]"); if (b) { openTest(b.dataset.try); return; }
   const t = e.target.closest("[data-open-t]"); if (t) openTraining(t.dataset.openT);
 });
 
+/* ---------- Muallif metodikalari konstruktori ---------- */
+const OPT_PRESETS = {
+  agree5: ["Mutlaqo qo'shilmayman", "Qo'shilmayman", "Bilmayman", "Qo'shilaman", "To'liq qo'shilaman"],
+  agree4: ["Mutlaqo qo'shilmayman", "Qo'shilmayman", "Qo'shilaman", "To'liq qo'shilaman"],
+  agree7: ["Mutlaqo qo'shilmayman", "Qo'shilmayman", "Biroz qo'shilmayman", "Betaraf", "Biroz qo'shilaman", "Qo'shilaman", "Mutlaqo qo'shilaman"],
+  freq4: ["Umuman yo'q", "Bir necha kun", "Kunlarning yarmidan ko'pida", "Deyarli har kuni"],
+  freq5: ["Hech qachon", "Kamdan-kam", "Ba'zan", "Tez-tez", "Doimo"],
+  yesno: ["Yo'q", "Ha"]
+};
+const PRESET_LABELS = { agree5: "Rozilik, 5 balli", agree4: "Rozilik, 4 balli", agree7: "Rozilik, 7 balli", freq4: "Chastota, 4 balli (PHQ uslubi)", freq5: "Chastota, 5 balli", yesno: "Ha / Yo'q", custom: "O'zim yozaman" };
+let customIds = new Set(), customSig = "", customEdit = null, instrumentsUnsub = null;
+const customList = () => [...customIds].map(id => INSTRUMENTS[id]).filter(Boolean);
+function applyCustomInstruments(list) {
+  customIds.forEach(id => { if (!list.some(x => x.id === id)) delete INSTRUMENTS[id]; });
+  customIds = new Set(list.map(x => x.id));
+  list.forEach(def => { INSTRUMENTS[def.id] = { ...def, custom: true }; });
+  computeDomains(); fillInstSelect();
+  if (bankTab === "custom") renderCustomList(); else renderBank();
+  renderMyStudies();
+}
+function customBuilderHtml() {
+  return `<div class="panel">
+    <div class="row" style="justify-content:space-between"><h3 id="cbTitle">Yangi metodika</h3><span class="note">Yaratilgan metodika bankda va tadqiqot konstruktorida paydo bo'ladi</span></div>
+    <div class="form-grid">
+      <label class="field" for="cbName">Qisqa nomi (masalan, AIT-12)<input class="inp" id="cbName" maxlength="40"></label>
+      <label class="field" for="cbDomain">Soha<input class="inp" id="cbDomain" list="cbDomains" value="Muallif metodikalari"><datalist id="cbDomains">${DOMAINS.map(d => `<option value="${esc(d)}">`).join("")}</datalist></label>
+      <label class="field wide" for="cbFull">To'liq nomi<input class="inp" id="cbFull" maxlength="200"></label>
+      <label class="field wide" for="cbLead">Respondent uchun yo'riqnoma<textarea id="cbLead" rows="2" placeholder="Quyidagi fikrlarga qanchalik qo'shilasiz?"></textarea></label>
+      <label class="field wide" for="cbItems">Savollar (har qatorda bitta)<textarea id="cbItems" rows="8"></textarea></label>
+      <label class="field" for="cbReverse">Teskari savollar raqamlari (vergul bilan)<input class="inp" id="cbReverse" placeholder="Masalan, 2, 5"></label>
+      <label class="field" for="cbMinutes">Taxminiy vaqt, daqiqa<input class="inp num" id="cbMinutes" type="number" min="1" value="3"></label>
+      <label class="field" for="cbPreset">Javob shkalasi<select id="cbPreset">${Object.entries(PRESET_LABELS).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</select></label>
+      <label class="field" for="cbStart">Birinchi javob qiymati<select id="cbStart"><option value="1">1</option><option value="0">0</option></select></label>
+      <label class="field wide" for="cbOpts" id="cbOptsWrap" hidden>Javob variantlari (har qatorda bitta, eng pastdan eng yuqoriga)<textarea id="cbOpts" rows="4"></textarea></label>
+      <label class="field" for="cbScoring">Hisoblash<select id="cbScoring"><option value="sum">Ballar yig'indisi</option><option value="mean">Savollar o'rtachasi</option></select></label>
+      <p class="note" id="cbRange" style="align-self:end"></p>
+      <label class="field wide" for="cbBands">Talqin chegaralari (ixtiyoriy; har qatorda: «10-20 Past»)<textarea id="cbBands" rows="3"></textarea></label>
+      <label class="field wide" for="cbSub">Subshkalalar (ixtiyoriy; har qatorda: «Nomi: 1, 3, 5»)<textarea id="cbSub" rows="2"></textarea></label>
+      <label class="field wide" for="cbSource">Manba yoki izoh<textarea id="cbSource" rows="2" placeholder="Masalan, dissertatsiya muallifining ishlanmasi (2026)"></textarea></label>
+    </div>
+    <div class="row" style="justify-content:space-between"><span class="note" id="cbMsg"></span><div class="row"><button type="button" class="btn" data-cb-new>Yangisini boshlash</button><button type="button" class="btn" data-cb-preview>Ko'rib chiqish</button><button type="button" class="btn primary" data-cb-save>Saqlash</button></div></div>
+    <div id="cbPreview"></div>
+  </div>
+  <div class="panel"><h3>Muallif metodikalari</h3><div id="cbList"></div></div>`;
+}
+function fillCustomForm(def) {
+  customEdit = def ? def.id : null;
+  $("#cbTitle").textContent = def ? `«${def.name}» metodikasini tahrirlash` : "Yangi metodika";
+  $("#cbName").value = def?.name || ""; $("#cbFull").value = def?.full || ""; $("#cbDomain").value = def?.domain || "Muallif metodikalari";
+  $("#cbLead").value = def?.lead || ""; $("#cbItems").value = (def?.items || []).join("\n"); $("#cbReverse").value = (def?.reverse || []).join(", ");
+  $("#cbMinutes").value = def?.minutes || 3; $("#cbStart").value = String(def?.start ?? 1); $("#cbScoring").value = def?.scoring || "sum";
+  const preset = def ? Object.entries(OPT_PRESETS).find(([, v]) => JSON.stringify(v) === JSON.stringify(def.opts))?.[0] || "custom" : "agree5";
+  $("#cbPreset").value = preset; $("#cbOpts").value = preset === "custom" ? def.opts.join("\n") : ""; $("#cbOptsWrap").hidden = preset !== "custom";
+  $("#cbBands").value = (def?.bands || []).filter(b => b[2] !== "Umumiy ball").map(b => `${b[0]}-${b[1]} ${b[2]}`).join("\n");
+  $("#cbSub").value = Object.entries(def?.subscales || {}).map(([k, v]) => `${k}: ${v.join(", ")}`).join("\n");
+  $("#cbSource").value = def?.custom && def.source !== "Muallif ishlanmasi." ? def.source : "";
+  $("#cbMsg").textContent = ""; $("#cbPreview").innerHTML = "";
+  updateCustomRange();
+}
+function parseCustomForm() {
+  const lines = sel => $(sel).value.split("\n").map(x => x.trim()).filter(Boolean);
+  const items = lines("#cbItems"), preset = $("#cbPreset").value;
+  const opts = preset === "custom" ? lines("#cbOpts") : OPT_PRESETS[preset];
+  const start = +$("#cbStart").value, scoring = $("#cbScoring").value, k = opts.length, n = items.length;
+  const min = scoring === "mean" ? start : n * start, max = scoring === "mean" ? start + k - 1 : n * (start + k - 1);
+  const reverse = [...new Set($("#cbReverse").value.split(/[^0-9]+/).filter(Boolean).map(Number))].filter(i => i >= 1 && i <= n).sort((a, b) => a - b);
+  const num = v => +String(v).replace(",", ".");
+  const bands = lines("#cbBands").map(l => l.match(/^(\d+(?:[.,]\d+)?)\s*[-–]\s*(\d+(?:[.,]\d+)?)\s*:?\s*(.+)$/)).filter(Boolean)
+    .map(m => [num(m[1]), num(m[2]), m[3].trim(), "neutral"]).sort((a, b) => a[0] - b[0]);
+  const subscales = {};
+  lines("#cbSub").forEach(l => { const m = l.match(/^(.+?):\s*([\d,\s]+)$/); if (!m) return; const idx = m[2].split(/[^0-9]+/).filter(Boolean).map(Number).filter(i => i >= 1 && i <= n); if (idx.length) subscales[m[1].trim()] = idx; });
+  const name = $("#cbName").value.trim();
+  const error = !name ? "Qisqa nomini kiriting." : n < 2 ? "Kamida 2 ta savol yozing." : k < 2 ? "Kamida 2 ta javob varianti kerak." : k > 11 ? "Javob variantlari 11 tadan oshmasin." : null;
+  return {
+    error, def: {
+      id: customEdit || "c-" + Math.random().toString(36).slice(2, 10), name, full: $("#cbFull").value.trim() || name,
+      domain: $("#cbDomain").value.trim() || "Muallif metodikalari", minutes: Math.max(1, +$("#cbMinutes").value || 1),
+      lead: $("#cbLead").value.trim() || "Quyidagi fikrlarga qanchalik qo'shilasiz?", items, opts, start, scoring, min, max,
+      ...(reverse.length ? { reverse } : {}), ...(Object.keys(subscales).length ? { subscales } : {}),
+      bands: bands.length ? bands : [[min, max, "Umumiy ball", "neutral"]],
+      source: $("#cbSource").value.trim() || "Muallif ishlanmasi.", license: "Muallif ishlanmasi; psixometrik validatsiya talab etiladi.", updatedAt: Date.now()
+    }
+  };
+}
+function updateCustomRange() {
+  const { def } = parseCustomForm();
+  $("#cbRange").textContent = def.items.length ? `${def.items.length} savol · ball diapazoni ${def.min}–${def.max}${def.reverse ? ` · teskari: ${def.reverse.join(", ")}` : ""}` : "";
+}
+function renderCustomList() {
+  const box = $("#cbList"); if (!box) return;
+  const list = customList();
+  box.innerHTML = list.length ? `<ul class="tasks">${list.map(t => {
+    const used = studies.filter(s => s.instruments.includes(t.id)).length;
+    return `<li class="task"><span><b>${esc(t.name)}</b> · ${esc(t.full)} <span class="note">${t.items.length} savol${used ? ` · ${used} ta tadqiqotda` : ""}</span></span><span class="row" data-cb-row="${t.id}"><button type="button" class="btn small" data-try="${t.id}">Sinab ko'rish</button><button type="button" class="btn small" data-cb-edit="${t.id}">Tahrirlash</button><button type="button" class="btn small danger" data-cb-del="${t.id}">O'chirish</button></span></li>`;
+  }).join("")}</ul>` : `<p class="note">Hali muallif metodikasi yo'q. Yuqoridagi shakl orqali birinchisini yarating.</p>`;
+}
+$("#bankList").addEventListener("input", e => { if (bankTab === "custom" && e.target.closest(".form-grid")) updateCustomRange(); });
+$("#bankList").addEventListener("change", e => {
+  if (e.target.id === "cbPreset") { $("#cbOptsWrap").hidden = e.target.value !== "custom"; if (e.target.value === "yesno") $("#cbStart").value = "0"; }
+  if (bankTab === "custom") updateCustomRange();
+});
+$("#bankList").addEventListener("click", async e => {
+  const t = e.target;
+  if (t.closest("[data-cb-new]")) { fillCustomForm(null); return; }
+  if (t.closest("[data-cb-preview]")) {
+    const { error, def } = parseCustomForm();
+    if (error) { $("#cbMsg").textContent = error; return; }
+    INSTRUMENTS.__preview = def;
+    $("#cbPreview").innerHTML = `<h4>Respondent ko'radigan ko'rinish</h4><p class="lead">${esc(def.lead)}</p>${questionsHtml("__preview", "pv-")}`;
+    delete INSTRUMENTS.__preview;
+    return;
+  }
+  if (t.closest("[data-cb-save]")) {
+    const { error, def } = parseCustomForm(), msg = m => { $("#cbMsg").textContent = m; };
+    if (error) return msg(error);
+    msg("Saqlanmoqda…");
+    try { await db.doc("instruments/" + def.id).set(def); } catch (err) { return msg("Saqlanmadi: " + (err?.code || "xato")); }
+    applyCustomInstruments([...customList().filter(x => x.id !== def.id), def]);
+    customEdit = def.id; $("#cbTitle").textContent = `«${def.name}» metodikasini tahrirlash`;
+    msg("Saqlandi. Endi bu metodikani tadqiqot konstruktorida tanlashingiz mumkin.");
+    return;
+  }
+  const ed = t.closest("[data-cb-edit]"); if (ed) { fillCustomForm(INSTRUMENTS[ed.dataset.cbEdit]); $("#bankList").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+  const del = t.closest("[data-cb-del]");
+  if (del) {
+    const id = del.dataset.cbDel, used = studies.filter(s => s.instruments.includes(id)).length;
+    del.parentElement.innerHTML = `<span class="note">${used ? `${used} ta tadqiqotda ishlatilgan, ulardagi topshiriq yo'qoladi. ` : ""}O'chirilsinmi?</span><button type="button" class="btn small danger" data-cb-del-yes="${id}">Ha</button><button type="button" class="btn small" data-cb-del-no>Yo'q</button>`;
+    return;
+  }
+  if (t.closest("[data-cb-del-no]")) { renderCustomList(); return; }
+  const dy = t.closest("[data-cb-del-yes]");
+  if (dy) {
+    const id = dy.dataset.cbDelYes;
+    try { await db.doc("instruments/" + id).delete(); } catch (err) { dy.textContent = "Xato: " + (err?.code || ""); return; }
+    if (customEdit === id) fillCustomForm(null);
+    applyCustomInstruments(customList().filter(x => x.id !== id));
+  }
+});
+
+/* ---------- Savollar tahlili va APA uslubidagi natijalar matni ---------- */
+function itemAnalysisHtml(id, mat) {
+  const t = INSTRUMENTS[id];
+  if (mat.length < 5 || mat[0].length < 3) return `<p class="note">Savollar tahlili uchun kamida 5 ta javob va 3 ta savol kerak.</p>`;
+  const k = mat[0].length, alpha = cronbach(mat), totals = mat.map(r => r.reduce((s, v) => s + v, 0));
+  const rows = Array.from({ length: k }, (_, j) => {
+    const col = mat.map(r => r[j]), rest = totals.map((tt, i) => tt - col[i]);
+    const r = sdev(col) > 0 && sdev(rest) > 0 ? pearson(col, rest).r : NaN;
+    const aDel = cronbach(mat.map(row => row.filter((_, i) => i !== j)));
+    const flags = [isNaN(r) ? `<span class="chip neutral">o'zgaruvchanlik yo'q</span>` : r < 0.3 ? `<span class="chip warn">past r</span>` : "", aDel > alpha + 0.01 ? `<span class="chip warn">α oshadi</span>` : ""].join(" ");
+    return `<tr><td class="num">${j + 1}</td><td>${esc(t.items[j])}${(t.reverse || []).includes(j + 1) ? ` <span class="note">(teskari)</span>` : ""}</td><td class="num">${mean(col).toFixed(2)}</td><td class="num">${sdev(col).toFixed(2)}</td><td class="num">${isNaN(r) ? "—" : r.toFixed(2)}</td><td class="num">${isNaN(aDel) ? "—" : aDel.toFixed(2)}</td><td>${flags}</td></tr>`;
+  }).join("");
+  return `<div class="tablewrap"><table class="history"><thead><tr><th>№</th><th>Savol</th><th>M</th><th>SD</th><th>r (savol – qolgan ball)</th><th>α, savol olib tashlansa</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+const apaNum = (v, d = 2) => v.toFixed(d).replace(/^(-?)0\./, "$1.");
+const apaP = p => p < 0.001 ? "p < .001" : "p = " + apaNum(p, 3);
+const rWord = r => { const a = Math.abs(r); return (a < 0.3 ? "zaif" : a < 0.5 ? "o'rtacha" : "kuchli") + (r > 0 ? " musbat" : " manfiy"); };
+const signed = v => (v > 0 ? "+" : "") + v.toFixed(2);
+function apaParagraphs(st, rows, waveId, S, pairs) {
+  const out = [], arms = st.arms || [], [A, B] = arms, wLabel = st.waves.find(w => w.id === waveId)?.label || waveId, w0 = st.waves[0]?.id;
+  let p1 = `Tadqiqotda ${rows.length} nafar respondent ishtirok etdi`;
+  if (arms.length > 1) p1 += ` (${arms.map(a => `${a.name.toLowerCase()} — ${rows.filter(r => r.enr.arm === a.id).length} nafar`).join(", ")})`;
+  p1 += ".";
+  const demoId = st.instruments.find(id => isForm(id));
+  const demo = demoId ? rows.map(r => r.enr.responses?.find(x => x.inst === demoId)?.answers).filter(Boolean) : [];
+  if (demo.length) {
+    const women = demo.filter(a => a.jins === "Ayol").length, ages = demo.map(a => a.yosh).filter(x => typeof x === "number");
+    const bits = [];
+    if (demo.some(a => a.jins)) bits.push(`${Math.round(women / demo.length * 100)}% ayollar`);
+    if (ages.length > 1) bits.push(`o'rtacha yoshi M = ${ages.length ? mean(ages).toFixed(1) : "—"}, SD = ${sdev(ages).toFixed(1)}`);
+    if (bits.length) p1 += ` Ishtirokchilarning ${bits.join(", ")}.`;
+  }
+  out.push(p1);
+  const rel = Object.entries(S).filter(([, s]) => !isNaN(s.alpha));
+  if (rel.length) {
+    const low = rel.filter(([, s]) => s.alpha < 0.7).map(([id]) => INSTRUMENTS[id].name);
+    out.push(`${wLabel} o'lchovida metodikalarning ichki muvofiqligi (Kronbax α): ${rel.map(([id, s]) => `${INSTRUMENTS[id].name} — α = ${apaNum(s.alpha)}`).join(", ")}. ` +
+      (low.length ? `${low.join(", ")} uchun ishonchlilik 0.70 mezonidan past bo'lib, savollar tahlili asosida qayta ko'rib chiqishni talab qiladi.` : "Barcha shkalalar uchun ko'rsatkich 0.70 mezonidan yuqori bo'lib, qoniqarli ishonchlilikni ko'rsatadi."));
+  }
+  Object.entries(S).forEach(([id, s]) => {
+    const name = INSTRUMENTS[id].name;
+    if (B && s.cmp) {
+      const [a1, b1] = s.byArm, w = s.cmp, sig = w.p < 0.05;
+      out.push(`${wLabel} o'lchovida ${name} bo'yicha ${A.name.toLowerCase()} (M = ${mean(a1).toFixed(2)}, SD = ${sdev(a1).toFixed(2)}) va ${B.name.toLowerCase()} (M = ${mean(b1).toFixed(2)}, SD = ${sdev(b1).toFixed(2)}) o'rtasidagi farq statistik jihatdan ${sig ? "ahamiyatli" : "ahamiyatsiz"} bo'ldi, t(${w.df.toFixed(1)}) = ${w.t.toFixed(2)}, ${apaP(w.p)}, d = ${apaNum(w.d)}${sig ? ` (samara hajmi ${sizeWord(w.d)})` : ""}.`);
+    } else if (s.all.length > 1) {
+      out.push(`${wLabel} o'lchovida ${name} bo'yicha o'rtacha ko'rsatkich M = ${mean(s.all).toFixed(2)}, SD = ${sdev(s.all).toFixed(2)} (n = ${s.all.length}).`);
+    }
+    if (s.chg) {
+      const { w, ca, cb } = s.chg, sig = w.p < 0.05;
+      out.push(`${w0} dan ${waveId} gacha ${name} ko'rsatkichi ${A.name.toLowerCase()}da o'rtacha ${signed(mean(ca))}, ${B.name.toLowerCase()}da ${signed(mean(cb))} ballga o'zgardi; guruhlar o'rtasidagi o'zgarish farqi ${sig ? "statistik jihatdan ahamiyatli" : "ahamiyatsiz"}, t(${w.df.toFixed(1)}) = ${w.t.toFixed(2)}, ${apaP(w.p)}, d = ${apaNum(w.d)}${sig ? ` (samara hajmi ${sizeWord(w.d)})` : ""}.`);
+    }
+  });
+  const sigPairs = pairs.filter(x => x.p < 0.05).sort((x, y) => Math.abs(y.r) - Math.abs(x.r)).slice(0, 6);
+  if (sigPairs.length) out.push(`Korrelyatsion tahlil quyidagi ahamiyatli bog'liqliklarni ko'rsatdi: ${sigPairs.map(x => `${INSTRUMENTS[x.a].name} va ${INSTRUMENTS[x.b].name} (r = ${apaNum(x.r)}, ${apaP(x.p)}; ${rWord(x.r)})`).join("; ")}.`);
+  return out;
+}
+
 function onBackendReady() {
   dbSettled = true;
+  $("#bankTabC").hidden = !(isPsy && db);
+  if (db && !instrumentsUnsub) {
+    instrumentsUnsub = db.collection("instruments").onSnapshot(s => {
+      const sig = s.docs.map(d => d.id + ":" + (d.data()?.updatedAt || 0)).join("|");
+      if (sig === customSig) return;
+      customSig = sig;
+      applyCustomInstruments(s.docs.map(d => d.data()).filter(Boolean));
+    }, () => {});
+  }
   if (isPsy && db && !studiesUnsub) {
     studiesUnsub = db.collection("studies").onSnapshot(s => {
       const sig = s.docs.map(d => d.id + ":" + (d.data()?.updatedAt || 0)).join("|");

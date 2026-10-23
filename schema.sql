@@ -22,3 +22,9 @@ CREATE TABLE IF NOT EXISTS studies (
   data TEXT NOT NULL,               -- instrumentlar, to'lqinlar, guruhlar, treyninglar (JSON)
   updated_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS instruments (
+  id TEXT PRIMARY KEY,              -- tadqiqotchi yaratgan metodika (c-...)
+  data TEXT NOT NULL,               -- savollar, javob shkalasi, hisoblash qoidasi (JSON)
+  updated_at INTEGER NOT NULL
+);

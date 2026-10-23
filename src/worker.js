@@ -8,6 +8,9 @@ import * as panelItem from "../functions/api/panel/[id].js";
 import * as studiesIndex from "../functions/api/studies/index.js";
 import * as studyItem from "../functions/api/studies/[id].js";
 import * as studyByCode from "../functions/api/studies/code/[code].js";
+import * as studyAssign from "../functions/api/studies/[id]/assign.js";
+import * as instrumentsIndex from "../functions/api/instruments/index.js";
+import * as instrumentItem from "../functions/api/instruments/[id].js";
 import { json } from "../server/lib.js";
 
 const ROUTES = [
@@ -19,7 +22,10 @@ const ROUTES = [
   [/^\/api\/panel\/([^/]+)$/, panelItem, "id"],
   [/^\/api\/studies$/, studiesIndex],
   [/^\/api\/studies\/code\/([^/]+)$/, studyByCode, "code"],
+  [/^\/api\/studies\/([^/]+)\/assign$/, studyAssign, "id"],
   [/^\/api\/studies\/([^/]+)$/, studyItem, "id"],
+  [/^\/api\/instruments$/, instrumentsIndex],
+  [/^\/api\/instruments\/([^/]+)$/, instrumentItem, "id"],
 ];
 
 export default {

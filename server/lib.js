@@ -56,6 +56,7 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_participants_consent ON participants (consent, updated_at)`,
   `CREATE TABLE IF NOT EXISTS ai_usage (key TEXT NOT NULL, day TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (key, day))`,
   `CREATE TABLE IF NOT EXISTS studies (id TEXT PRIMARY KEY, code TEXT NOT NULL UNIQUE, status TEXT NOT NULL, data TEXT NOT NULL, updated_at INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS instruments (id TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at INTEGER NOT NULL)`,
 ];
 let schemaReady = null;
 
@@ -125,4 +126,25 @@ export function pickProvider(env) {
   const wanted = (env.AI_PROVIDER || "").trim().toLowerCase();
   if (wanted) return ready[wanted] ? wanted : null;
   return ["anthropic", "gemini", "workers-ai"].find((p) => ready[p]) || null;
+}
+
+// Muallif metodikalari (tadqiqotchi yaratgan so'rovnomalar)
+const INSTRUMENT_ID_RE = /^c-[a-z0-9]{4,20}$/;
+const isStr = (v, max) => typeof v === "string" && v.length <= max;
+
+export function instrumentId(params) {
+  if (!INSTRUMENT_ID_RE.test(params.id || "")) throw new HttpError(400, "bad_instrument_id");
+  return params.id;
+}
+
+export function validateInstrument(b, id) {
+  const bad = () => { throw new HttpError(400, "bad_instrument"); };
+  if (!b || typeof b !== "object" || Array.isArray(b)) bad();
+  if (!isStr(b.name, 40) || !b.name.trim() || !isStr(b.full || "", 200) || !isStr(b.lead || "", 1000)) bad();
+  if (!Array.isArray(b.items) || b.items.length < 2 || b.items.length > 100 || !b.items.every((q) => isStr(q, 500) && q.trim())) bad();
+  if (!Array.isArray(b.opts) || b.opts.length < 2 || b.opts.length > 11 || !b.opts.every((o) => isStr(o, 80) && o.trim())) bad();
+  if (![0, 1].includes(b.start) || !["sum", "mean"].includes(b.scoring)) bad();
+  if (b.reverse && (!Array.isArray(b.reverse) || !b.reverse.every((i) => Number.isInteger(i) && i >= 1 && i <= b.items.length))) bad();
+  if (!Array.isArray(b.bands) || !b.bands.length || b.bands.length > 10) bad();
+  return { ...b, id, custom: true };
 }
