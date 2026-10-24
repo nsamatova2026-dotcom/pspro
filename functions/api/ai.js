@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { HttpError, checkRateLimit, handle, json, participantId, pickProvider, readJson } from "../../server/lib.js";
+import { HttpError, checkRateLimit, geminiGenerate, handle, json, participantId, pickProvider, readJson } from "../../server/lib.js";
 
 const MAX_CHARS = 60000;
 const MAX_OUTPUT = 4096;
@@ -38,31 +38,13 @@ const PROVIDERS = {
     return { text, truncated: false };
   },
 
-  // Google Gemini API: GEMINI_API_KEY (Google AI Studio'da bepul olinadi)
+  // Google Gemini API: GEMINI_API_KEY (Google AI Studio'da bepul olinadi); model topilmasa avtomatik tanlanadi
   async gemini(env, messages) {
-    const model = env.GEMINI_MODEL || "gemini-2.5-flash";
-    const generationConfig = { maxOutputTokens: MAX_OUTPUT };
-    // Flash modellarida «o'ylash» bosqichini o'chiramiz: bepul limit tejaladi va javob tezroq keladi
-    if (model.includes("flash")) generationConfig.thinkingConfig = { thinkingBudget: 0 };
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM }] },
-        contents: messages.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
-        generationConfig,
-      }),
-    });
-    if (r.status === 429) throw new HttpError(429, "rate_limited");
-    if (!r.ok) {
-      console.error(`Gemini xatosi ${r.status}:`, (await r.text()).slice(0, 500));
-      if (r.status === 400 || r.status === 401 || r.status === 403) throw new HttpError(503, "ai_not_configured");
-      throw new HttpError(502, "ai_unavailable");
-    }
-    const data = await r.json();
-    const cand = data.candidates?.[0];
-    if (!cand) throw new HttpError(data.promptFeedback?.blockReason ? 422 : 502, data.promptFeedback?.blockReason ? "refused" : "ai_unavailable");
-    if (cand.finishReason === "SAFETY") throw new HttpError(422, "refused");
+    const { cand } = await geminiGenerate(env, "chat", (model) => ({
+      systemInstruction: { parts: [{ text: SYSTEM }] },
+      contents: messages.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
+      generationConfig: { maxOutputTokens: MAX_OUTPUT, ...(/2\.5-flash/.test(model) ? { thinkingConfig: { thinkingBudget: 0 } } : {}) },
+    }), "ai_not_configured");
     const text = (cand.content?.parts || []).map((p) => p.text || "").join("");
     if (!text) throw new HttpError(502, "ai_unavailable");
     return { text, truncated: cand.finishReason === "MAX_TOKENS" };

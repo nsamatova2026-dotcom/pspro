@@ -2,6 +2,7 @@
 import * as ai from "../functions/api/ai.js";
 import * as tts from "../functions/api/tts.js";
 import * as voice from "../functions/api/voice.js";
+import * as gemini from "../functions/api/gemini.js";
 import * as auth from "../functions/api/auth.js";
 import * as health from "../functions/api/health.js";
 import * as me from "../functions/api/me.js";
@@ -22,6 +23,7 @@ const ROUTES = [
   [/^\/api\/ai$/, ai],
   [/^\/api\/voice$/, voice],
   [/^\/api\/tts$/, tts],
+  [/^\/api\/gemini$/, gemini],
   [/^\/api\/panel$/, panelIndex],
   [/^\/api\/panel\/([^/]+)$/, panelItem, "id"],
   [/^\/api\/studies$/, studiesIndex],

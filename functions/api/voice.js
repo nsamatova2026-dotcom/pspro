@@ -1,4 +1,4 @@
-import { HttpError, callGemini, checkRateLimit, handle, json, participantId, readJson } from "../../server/lib.js";
+import { HttpError, checkRateLimit, geminiGenerate, handle, json, participantId, readJson } from "../../server/lib.js";
 
 const VOICE_SYSTEM = `Sen "RuhAI" — o'zbekistonlik talabalar uchun o'zbek tilida gaplashadigan psixologik qo'llab-quvvatlash ovozli suhbatdoshisan.
 Senga foydalanuvchining navbatdagi gapi audio ko'rinishida keladi. Ikki narsani qaytar:
@@ -34,18 +34,16 @@ export const onRequestPost = handle(async ({ request, env }) => {
   }
   if (history.length && history[history.length - 1].role === "user") history.push({ role: "model", parts: [{ text: "Tushundim." }] });
 
-  const model = env.GEMINI_MODEL || "gemini-2.5-flash";
-  const generationConfig = {
-    maxOutputTokens: 2048,
-    responseMimeType: "application/json",
-    responseSchema: { type: "OBJECT", properties: { transcript: { type: "STRING" }, reply: { type: "STRING" } }, required: ["transcript", "reply"] },
-  };
-  if (model.includes("flash")) generationConfig.thinkingConfig = { thinkingBudget: 0 };
-  const cand = await callGemini(env, model, {
+  const schema = { type: "OBJECT", properties: { transcript: { type: "STRING" }, reply: { type: "STRING" } }, required: ["transcript", "reply"] };
+  const { cand } = await geminiGenerate(env, "chat", (model) => ({
     systemInstruction: { parts: [{ text: VOICE_SYSTEM }] },
     contents: [...history, { role: "user", parts: [{ inlineData: { mimeType: body.mime, data: body.audio } }, { text: "Bu foydalanuvchining navbatdagi gapi." }] }],
-    generationConfig,
-  });
+    generationConfig: {
+      maxOutputTokens: 2048, responseMimeType: "application/json", responseSchema: schema,
+      // «O'ylash»ni o'chirish faqat 2.5 flash avlodida qo'llab-quvvatlanadi: tezroq javob va bepul limit tejaladi
+      ...(/2\.5-flash/.test(model) ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+    },
+  }));
   const raw = (cand.content?.parts || []).map((p) => p.text || "").join("");
   let out;
   try { out = JSON.parse(raw); } catch { throw new HttpError(502, "bad_json"); }

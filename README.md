@@ -96,9 +96,9 @@ Birinchi ishlatishdan oldin respondentga ovoz Google'ga yuborilishi haqida ogohl
 |---|---|---|
 | `AI_PROVIDER` | `workers-ai`, `gemini` yoki `anthropic`; bo'sh bo'lsa, mavjud kalitga qarab tanlanadi | `workers-ai` |
 | `WORKERS_AI_MODEL` | Workers AI modeli | `@cf/google/gemma-3-12b-it` |
-| `GEMINI_MODEL` | Gemini modeli | `gemini-2.5-flash` |
+| `GEMINI_MODEL` | Gemini modeli. Topilmasa, kalit uchun mavjud modellardan eng mos «flash» modeli avtomatik tanlanadi | `gemini-flash-latest` |
 | `ANTHROPIC_MODEL` | Claude modeli | `claude-opus-5-5` |
-| `GEMINI_TTS_MODEL` | Javoblarni o'qiydigan Gemini ovoz modeli | `gemini-2.5-flash-preview-tts` |
+| `GEMINI_TTS_MODEL` | Javoblarni o'qiydigan Gemini ovoz modeli (topilmasa, mavjud TTS modeli avtomatik tanlanadi) | `gemini-2.5-flash-preview-tts` |
 | `GEMINI_TTS_VOICE` | Gemini ovozi nomi | `Kore` |
 | `AI_DAILY_LIMIT` | Har bir respondentning kunlik AI so'rovlari soni (ovozli navbat 2 ta so'rov hisoblanadi) | `60` |
 | `AI_DAILY_LIMIT_IP` | Bitta IP manzildan kunlik AI so'rovlari (auditoriya bitta IP orqali chiqishi mumkin) | `1500` |
@@ -144,6 +144,7 @@ Birinchi kirishda platforma «Respondent» yoki «Tadqiqotchi» rolini tanlashni
 | `POST /api/ai` | respondent | AI so'rovi (tanlangan provayder orqali) |
 | `POST /api/voice` | respondent | Ovozli navbat: audio → matn va javob (Gemini) |
 | `POST /api/tts` | respondent | Javob matnini Gemini ovozida o'qish |
+| `GET /api/gemini` | hamma | Tekshiruv: kalit uchun mavjud Gemini modellari va platforma ishlatayotgan modellar |
 
 Tadqiqotchi so'rovlari `Authorization: Bearer <PSY_TOKEN>` sarlavhasini talab qiladi.
 

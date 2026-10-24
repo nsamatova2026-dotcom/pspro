@@ -169,18 +169,22 @@ export async function checkRateLimit(env, request, cost = 1) {
 }
 
 // Gemini API so'rovi: xatolarni platformaning umumiy kodlariga aylantiradi
-export async function callGemini(env, model, body) {
-  if (!env.GEMINI_API_KEY) throw new HttpError(503, "voice_not_configured");
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta";
+export async function callGemini(env, model, body, notConfigured = "voice_not_configured") {
+  if (!env.GEMINI_API_KEY) throw new HttpError(503, notConfigured);
+  const r = await fetch(`${GEMINI_BASE}/models/${encodeURIComponent(model)}:generateContent`, {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
     body: JSON.stringify(body),
   });
   if (r.status === 429) throw new HttpError(429, "rate_limited");
   if (!r.ok) {
-    console.error(`Gemini xatosi ${r.status} (${model}):`, (await r.text()).slice(0, 500));
-    if (r.status === 400 || r.status === 401 || r.status === 403) throw new HttpError(503, "voice_not_configured");
-    if (r.status === 404) throw new HttpError(502, "model_not_found");
+    const text = (await r.text()).slice(0, 800);
+    console.error(`Gemini xatosi ${r.status} (${model}):`, text);
+    // Kalit bilan bog'liq xatolar va so'rov parametri bilan bog'liq xatolar alohida ajratiladi
+    if (r.status === 401 || r.status === 403 || /API key|API_KEY|PERMISSION_DENIED/i.test(text)) throw new HttpError(503, notConfigured);
+    if (r.status === 404 || /not found|is not supported for generateContent/i.test(text)) throw new HttpError(502, "model_not_found");
+    if (r.status === 400) throw new HttpError(400, "bad_request");
     throw new HttpError(502, "ai_unavailable");
   }
   const data = await r.json();
@@ -189,3 +193,69 @@ export async function callGemini(env, model, body) {
   if (cand.finishReason === "SAFETY") throw new HttpError(422, "refused");
   return cand;
 }
+
+// Kalit uchun mavjud Gemini modellari (1 soat keshlanadi)
+const geminiState = { models: null, at: 0, resolved: {} };
+export async function listGeminiModels(env) {
+  if (geminiState.models && Date.now() - geminiState.at < 3600e3) return geminiState.models;
+  const out = [];
+  let page = "";
+  for (let i = 0; i < 5; i++) {
+    const r = await fetch(`${GEMINI_BASE}/models?pageSize=1000${page ? "&pageToken=" + encodeURIComponent(page) : ""}`, { headers: { "x-goog-api-key": env.GEMINI_API_KEY } });
+    if (!r.ok) { console.error("Gemini modellar ro'yxati xatosi", r.status, (await r.text()).slice(0, 300)); break; }
+    const d = await r.json();
+    (d.models || []).forEach((m) => out.push({ name: String(m.name || "").replace(/^models\//, ""), methods: m.supportedGenerationMethods || [] }));
+    if (!d.nextPageToken) break;
+    page = d.nextPageToken;
+  }
+  if (out.length) { geminiState.models = out; geminiState.at = Date.now(); }
+  return out;
+}
+
+// Ro'yxatdan mos modelni tanlash: yangi versiya, «flash» oilasi (bepul tarifda qulay), barqaror (preview emas)
+export function pickGeminiModels(models, kind) {
+  const ok = models.filter((m) => m.methods.includes("generateContent") && /^gemini-/.test(m.name));
+  const isTts = (n) => /tts/.test(n);
+  let list = kind === "tts"
+    ? ok.filter((m) => isTts(m.name))
+    : ok.filter((m) => !isTts(m.name) && /flash/.test(m.name) && !/image|live|embed|native-audio|computer|robotics|lite/.test(m.name));
+  if (!list.length && kind !== "tts") list = ok.filter((m) => !isTts(m.name) && !/image|live|embed|native-audio|computer|robotics/.test(m.name));
+  const version = (n) => parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/) || [])[1] || "0");
+  const unstable = (n) => (/preview|exp/.test(n) ? 1 : 0);
+  return list
+    .map((m) => m.name)
+    .sort((a, b) => (/-latest$/.test(b) - /-latest$/.test(a)) || version(b) - version(a) || (/flash/.test(b) - /flash/.test(a)) || unstable(a) - unstable(b) || a.length - b.length);
+}
+
+// Gemini'ga so'rov: sozlamadagi model topilmasa, mavjud modellardan mosini avtomatik tanlaydi va eslab qoladi.
+// tune(model) — model nomiga qarab so'rov tanasini tayyorlaydi (masalan, faqat 2.5 avlodida thinkingBudget).
+export async function geminiGenerate(env, kind, tune, notConfigured = "voice_not_configured") {
+  if (!env.GEMINI_API_KEY) throw new HttpError(503, notConfigured);
+  const configured = kind === "tts" ? env.GEMINI_TTS_MODEL || "gemini-2.5-flash-preview-tts" : env.GEMINI_MODEL || "gemini-flash-latest";
+  const tried = new Set();
+  let lastErr = null;
+  const attempt = async (model) => {
+    if (!model || tried.has(model)) return null;
+    tried.add(model);
+    try {
+      const cand = await callGemini(env, model, tune(model), notConfigured);
+      geminiState.resolved[kind] = model;
+      return { cand, model };
+    } catch (e) {
+      if (e instanceof HttpError && (e.code === "model_not_found" || e.code === "bad_request")) { lastErr = e; return null; }
+      throw e;
+    }
+  };
+  for (const m of [geminiState.resolved[kind], configured, kind === "tts" ? null : "gemini-flash-latest"]) {
+    const res = await attempt(m);
+    if (res) return res;
+  }
+  let models = [];
+  try { models = await listGeminiModels(env); } catch (e) { console.error("Gemini modellar ro'yxatini olib bo'lmadi:", e?.message || e); }
+  for (const m of pickGeminiModels(models, kind).slice(0, 4)) {
+    const res = await attempt(m);
+    if (res) return res;
+  }
+  throw lastErr || new HttpError(502, "model_not_found");
+}
+export const geminiResolved = () => ({ ...geminiState.resolved });
