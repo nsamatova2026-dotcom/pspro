@@ -87,6 +87,15 @@ Bepul limit tugasa, platforma AI so'rovlariga «Bugungi limit tugadi» deb javob
 3. Javob ekranda ko'rinadi va Gemini ovozida o'qiladi (`/api/tts`). Gemini ovozi ishlamasa, brauzerning o'z ovozi ishlatiladi.
 4. Matnga aylantirilgan gapda xavf belgilari bo'lsa, yordam raqamlari ko'rsatiladi va (rozilik bo'lsa) psixologga signal yuboriladi.
 
+**Tezlik.** Ovozli suhbat tezroq ishlashi uchun:
+- yozuv respondent gapni tugatib 1,2 soniya jim qolganda avtomatik yuboriladi (o'chirib qo'yish mumkin);
+- Gemini'ning «o'ylash» bosqichi minimal darajaga tushiriladi (model buni qabul qilmasa, parametrsiz qayta yuboriladi);
+- javob matni va ovoz bitta so'rovda oqim bilan keladi: matn darhol ko'rinadi, ovoz tayyor bo'lishi bilan o'qiladi;
+- avtomatik topilgan model bazada saqlanadi va qayta qidirilmaydi;
+- har navbatdan keyin «Oxirgi navbat: javob … s · ovoz … s» ko'rsatiladi.
+
+Ovoz hali ham sekin bo'lsa, `wrangler.toml` da `GEMINI_VOICE_MODEL = "gemini-flash-lite-latest"` qatorini yoqing (tezroq, lekin nutqni tushunish biroz sustroq bo'lishi mumkin) yoki «Javoblarni ovoz bilan o'qish» belgisini olib tashlang.
+
 Birinchi ishlatishdan oldin respondentga ovoz Google'ga yuborilishi haqida ogohlantirish ko'rsatiladi. Audio platformada saqlanmaydi. Ovoz modeli va ovoz nomi `wrangler.toml` dagi `GEMINI_TTS_MODEL` va `GEMINI_TTS_VOICE` qatorlarida o'zgartiriladi.
 
 **Maxfiylik bo'yicha muhim eslatma.** Google'ning bepul tarif shartlariga ko'ra, bepul Gemini API'ga yuborilgan ma'lumotlar Google mahsulotlarini yaxshilash uchun ishlatilishi mumkin. Respondentlarning kundalik yozuvlari va suhbatlari sezgir psixologik ma'lumot bo'lgani uchun, haqiqiy tadqiqotda Workers AI yoki pullik tarifni tanlang yoki rozilik matnida buni respondentlarga aniq ayting.
@@ -98,6 +107,7 @@ Birinchi ishlatishdan oldin respondentga ovoz Google'ga yuborilishi haqida ogohl
 | `WORKERS_AI_MODEL` | Workers AI modeli | `@cf/google/gemma-3-12b-it` |
 | `GEMINI_MODEL` | Gemini modeli. Topilmasa, kalit uchun mavjud modellardan eng mos «flash» modeli avtomatik tanlanadi | `gemini-flash-latest` |
 | `ANTHROPIC_MODEL` | Claude modeli | `claude-opus-5-5` |
+| `GEMINI_VOICE_MODEL` | Ovozli suhbat uchun alohida model (ixtiyoriy, masalan tezroq `gemini-flash-lite-latest`) | `GEMINI_MODEL` bilan bir xil |
 | `GEMINI_TTS_MODEL` | Javoblarni o'qiydigan Gemini ovoz modeli (topilmasa, mavjud TTS modeli avtomatik tanlanadi) | `gemini-2.5-flash-preview-tts` |
 | `GEMINI_TTS_VOICE` | Gemini ovozi nomi | `Kore` |
 | `AI_DAILY_LIMIT` | Har bir respondentning kunlik AI so'rovlari soni (ovozli navbat 2 ta so'rov hisoblanadi) | `60` |

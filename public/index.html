@@ -636,8 +636,12 @@ body[data-role=""] #nav, body[data-role=""] #roleSeg { display: none; }
           <div class="voice-main" id="voiceMain" hidden>
             <button type="button" class="mic" id="micBtn" aria-label="Gapirishni boshlash"><span class="mic-ring" id="micRing"></span><svg class="ic"><use href="#i-mic"/></svg></button>
             <p class="voice-state" id="voiceState" aria-live="polite">Gapirish uchun tugmani bosing</p>
-            <label class="check" for="voiceSpeak"><input type="checkbox" id="voiceSpeak" checked><span>Javoblarni ovoz bilan o'qish</span></label>
-            <p class="note">Tugmani bosing, gapiring, tugatgach yana bosing. Bir yozuv 60 soniyagacha.</p>
+            <div class="row" style="justify-content:center">
+              <label class="check" for="voiceSpeak"><input type="checkbox" id="voiceSpeak" checked><span>Javoblarni ovoz bilan o'qish</span></label>
+              <label class="check" for="voiceAuto"><input type="checkbox" id="voiceAuto" checked><span>Jim qolganimda avtomatik yuborish</span></label>
+            </div>
+            <p class="note">Tugmani bosing va gapiring. Gapni tugatib bir lahza jim qolsangiz, yozuv o'zi yuboriladi (yoki tugmani yana bosing). Bir yozuv 60 soniyagacha.</p>
+            <p class="note num" id="voiceTiming" aria-live="polite"></p>
           </div>
         </div>
         <p class="note" id="chatNote">Suhbat sizning Claude hisobingiz orqali ishlaydi; birinchi xabarda ruxsat so'raladi. Suhbat hech qayerda saqlanmaydi.</p>
@@ -949,9 +953,13 @@ function participantId() {
   return (pidCache = id);
 }
 const psyToken = () => store.get("psyToken", null);
-async function api(path, opts = {}) {
+function apiHeaders() {
   const headers = { "content-type": "application/json", "x-participant-id": participantId() };
   const tok = psyToken(); if (tok) headers.authorization = "Bearer " + tok;
+  return headers;
+}
+async function api(path, opts = {}) {
+  const headers = apiHeaders();
   let r;
   try { r = await fetch(path, { ...opts, headers }); }
   catch (e) { throw { code: e?.name === "AbortError" ? "cancelled" : "unavailable" }; }
@@ -1208,6 +1216,7 @@ $("#stop").onclick = () => ctl?.abort();
 $("#quick").addEventListener("click", e => { if (e.target.tagName === "BUTTON") send(e.target.textContent); });
 
 /* ---------- Ovozli suhbatdosh (Gemini) ---------- */
+let speechSeen = false, lastLoud = 0;
 let voiceOn = false, rec = null, recChunks = [], recStream = null, recTimer = null, recStart = 0, meterRaf = null, meterAc = null, voiceBusy = false, playing = null;
 function setVoiceState(text, mode = "") {
   $("#voiceState").textContent = text;
@@ -1228,7 +1237,9 @@ $("#chatMode").addEventListener("click", e => {
   if (!voiceOn) { stopRecording(); stopPlayback(); }
 });
 $("#voiceAgree").onclick = () => { store.set("voiceConsent", true); $("#voiceConsent").hidden = true; $("#voiceMain").hidden = false; };
-$("#micBtn").onclick = () => { if (voiceBusy) return; if (rec) stopRecording(); else startRecording(); };
+$("#micBtn").onclick = () => { if (voiceBusy) return; if (rec) stopRecording(); else { voiceTurn++; startRecording(); } };
+try { $("#voiceAuto").checked = store.get("voiceAuto", true); } catch {}
+$("#voiceAuto").addEventListener("change", e => store.set("voiceAuto", e.target.checked));
 
 async function startRecording() {
   stopPlayback();
@@ -1239,7 +1250,7 @@ async function startRecording() {
   rec = new MediaRecorder(recStream);
   rec.ondataavailable = e => { if (e.data.size) recChunks.push(e.data); };
   rec.onstop = onRecordingStop;
-  rec.start(); recStart = Date.now();
+  rec.start(); recStart = Date.now(); speechSeen = false; lastLoud = recStart;
   const tickState = () => {
     const s = Math.floor((Date.now() - recStart) / 1000);
     setVoiceState(`Tinglayapman ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} · tugatish uchun bosing`, "rec");
@@ -1253,27 +1264,58 @@ function stopRecording() {
   if (rec && rec.state !== "inactive") rec.stop();
   recStream?.getTracks().forEach(t => t.stop()); recStream = null;
 }
+// /api/voice javobini qatorma-qator o'qish (NDJSON): avval matn, keyin ovoz
+async function voiceStream(payload) {
+  let r;
+  try { r = await fetch("/api/voice", { method: "POST", headers: apiHeaders(), body: JSON.stringify(payload) }); }
+  catch { throw { code: "unavailable" }; }
+  if (!r.ok) { const b = await r.json().catch(() => ({})); throw { code: r.status === 429 && b.error !== "daily_limit" ? "rate_limited" : b.error || "unavailable" }; }
+  if (!(r.headers.get("content-type") || "").includes("ndjson")) { const one = await r.json(); let used = false; return { next: async () => (used ? null : (used = true, one)) }; }
+  const reader = r.body.getReader(), dec = new TextDecoder();
+  let buf = "";
+  return {
+    async next() {
+      for (;;) {
+        const i = buf.indexOf("\n");
+        if (i >= 0) { const ln = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (ln) return JSON.parse(ln); continue; }
+        const { value, done } = await reader.read();
+        if (done) return null;
+        buf += dec.decode(value, { stream: true });
+      }
+    }
+  };
+}
+let voiceTurn = 0;
 async function onRecordingStop() {
   const dur = Date.now() - recStart, type = rec?.mimeType || "audio/webm";
   rec = null;
   if (!voiceOn) return;
   if (dur < 700 || !recChunks.length) { setVoiceState("Juda qisqa yozuv. Tugmani bosing, gapiring va yana bosing."); return; }
+  const turn = ++voiceTurn, speakIt = $("#voiceSpeak").checked, t0 = performance.now();
   voiceBusy = true;
   setVoiceState("Tinglanmoqda va javob tayyorlanmoqda…", "busy");
   try {
     const wav = await blobToWav16k(new Blob(recChunks, { type }));
-    const { transcript, reply } = await api("/api/voice", { method: "POST", body: JSON.stringify({ audio: bytesToB64(new Uint8Array(wav)), mime: "audio/wav", history: turns.slice(-12) }) });
-    if (transcript) {
-      addMsg("me", transcript);
-      if (hasRisk(transcript)) flagRisk();
-    }
+    const stream = await voiceStream({ audio: bytesToB64(new Uint8Array(wav)), mime: "audio/wav", history: turns.slice(-12), speak: speakIt });
+    const first = await stream.next();
+    if (!first) throw { code: "ai_unavailable" };
+    const tText = performance.now();
+    const { transcript, reply } = first;
+    if (transcript) { addMsg("me", transcript); if (hasRisk(transcript)) flagRisk(); }
     if (reply) addMsg("bot", reply);
     if (transcript && reply) { turns.push({ role: "user", content: transcript }, { role: "assistant", content: reply }); countChatSession(); }
     voiceBusy = false;
-    if (reply && $("#voiceSpeak").checked) {
-      setVoiceState("Javob o'qilmoqda · gapirish uchun tugmani bosing");
-      speak(reply).then(() => { if (!rec && !voiceBusy) setVoiceState("Gapirish uchun tugmani bosing"); });
-    } else setVoiceState("Gapirish uchun tugmani bosing");
+    const timing = [`javob ${((tText - t0) / 1000).toFixed(1)} s`];
+    $("#voiceTiming").textContent = "Oxirgi navbat: " + timing.join(" · ");
+    if (!reply || !speakIt) { setVoiceState("Gapirish uchun tugmani bosing"); return; }
+    setVoiceState("Ovoz tayyorlanmoqda · gapirish uchun tugmani bosing");
+    const audio = await stream.next().catch(() => null);
+    if (turn !== voiceTurn || rec) return; // respondent yangi gap boshlagan
+    timing.push(`ovoz ${((performance.now() - tText) / 1000).toFixed(1)} s`);
+    $("#voiceTiming").textContent = "Oxirgi navbat: " + timing.join(" · ") + (audio?.type === "audio" ? "" : " (brauzer ovozi)");
+    setVoiceState("Javob o'qilmoqda · gapirish uchun tugmani bosing");
+    if (audio?.type === "audio") await playPcm(audio.audio, audio.mime); else await speakBrowser(reply);
+    if (turn === voiceTurn && !rec && !voiceBusy) setVoiceState("Gapirish uchun tugmani bosing");
   } catch (e) {
     voiceBusy = false;
     setVoiceState(errText(e?.code));
@@ -1290,8 +1332,11 @@ function startMeter(stream) {
     const tick = () => {
       an.getByteTimeDomainData(buf);
       let sum = 0; for (const v of buf) sum += (v - 128) ** 2;
-      const rms = Math.sqrt(sum / buf.length) / 128;
+      const rms = Math.sqrt(sum / buf.length) / 128, now = Date.now();
       $("#micRing").style.transform = `scale(${1 + Math.min(0.6, rms * 4)})`;
+      // Gap boshlangach 1,2 soniya jimlik bo'lsa, yozuv avtomatik yuboriladi
+      if (rms > 0.035) { speechSeen = true; lastLoud = now; }
+      if (rec && speechSeen && $("#voiceAuto").checked && now - lastLoud > 1200 && now - recStart > 1000) { stopRecording(); return; }
       meterRaf = requestAnimationFrame(tick);
     };
     tick();
@@ -1322,16 +1367,13 @@ function pcmToWav(pcmBytes, rate) {
 function bytesToB64(bytes) { let s = ""; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); }
 const b64ToBytes = b64 => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
 
-// Javobni o'qish: avval Gemini ovozi, ishlamasa brauzerning o'z ovozi
-async function speak(text) {
-  try {
-    const { audio, mime } = await api("/api/tts", { method: "POST", body: JSON.stringify({ text }) });
-    const rate = +(String(mime).match(/rate=(\d+)/)?.[1] || 24000);
-    const url = URL.createObjectURL(new Blob([pcmToWav(b64ToBytes(audio), rate)], { type: "audio/wav" }));
-    playing = new Audio(url);
-    await new Promise(res => { playing.onended = playing.onerror = playing.onpause = res; playing.play().catch(res); });
-    URL.revokeObjectURL(url); playing = null;
-  } catch { await speakBrowser(text); }
+// Javobni o'qish: Gemini ovozi (/api/voice oqimining ikkinchi qatori), ishlamasa brauzerning o'z ovozi
+async function playPcm(b64, mime) {
+  const rate = +(String(mime).match(/rate=(\d+)/)?.[1] || 24000);
+  const url = URL.createObjectURL(new Blob([pcmToWav(b64ToBytes(b64), rate)], { type: "audio/wav" }));
+  playing = new Audio(url);
+  await new Promise(res => { playing.onended = playing.onerror = playing.onpause = res; playing.play().catch(res); });
+  URL.revokeObjectURL(url); playing = null;
 }
 function speakBrowser(text) {
   if (!window.speechSynthesis) return Promise.resolve();

@@ -28,3 +28,9 @@ CREATE TABLE IF NOT EXISTS instruments (
   data TEXT NOT NULL,               -- savollar, javob shkalasi, hisoblash qoidasi (JSON)
   updated_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,             -- masalan, avtomatik topilgan Gemini modeli
+  value TEXT NOT NULL,
+  updated_at INTEGER NOT NULL
+);

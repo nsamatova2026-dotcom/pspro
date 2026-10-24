@@ -57,6 +57,7 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS ai_usage (key TEXT NOT NULL, day TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (key, day))`,
   `CREATE TABLE IF NOT EXISTS studies (id TEXT PRIMARY KEY, code TEXT NOT NULL UNIQUE, status TEXT NOT NULL, data TEXT NOT NULL, updated_at INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS instruments (id TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at INTEGER NOT NULL)`,
 ];
 let schemaReady = null;
 
@@ -159,13 +160,10 @@ export async function checkRateLimit(env, request, cost = 1) {
     ["p:" + (request.headers.get("x-participant-id") || "unknown"), Number(env.AI_DAILY_LIMIT || 60)],
     ["ip:" + (request.headers.get("cf-connecting-ip") || "unknown"), Number(env.AI_DAILY_LIMIT_IP || 1500)],
   ];
-  for (const [key, limit] of keys) {
-    const row = await db
-      .prepare(`INSERT INTO ai_usage (key, day, n) VALUES (?1, ?2, ?3) ON CONFLICT(key, day) DO UPDATE SET n = n + ?3 RETURNING n`)
-      .bind(key, day, cost)
-      .first();
-    if (row && row.n > limit) throw new HttpError(429, "daily_limit");
-  }
+  const sql = `INSERT INTO ai_usage (key, day, n) VALUES (?1, ?2, ?3) ON CONFLICT(key, day) DO UPDATE SET n = n + ?3 RETURNING n`;
+  // Ikkala hisoblagich bazaga bitta murojaat bilan yangilanadi
+  const res = await db.batch(keys.map(([key]) => db.prepare(sql).bind(key, day, cost)));
+  keys.forEach(([, limit], i) => { if ((res[i]?.results?.[0]?.n || 0) > limit) throw new HttpError(429, "daily_limit"); });
 }
 
 // Gemini API so'rovi: xatolarni platformaning umumiy kodlariga aylantiradi
@@ -227,24 +225,65 @@ export function pickGeminiModels(models, kind) {
     .sort((a, b) => (/-latest$/.test(b) - /-latest$/.test(a)) || version(b) - version(a) || (/flash/.test(b) - /flash/.test(a)) || unstable(a) - unstable(b) || a.length - b.length);
 }
 
-// Gemini'ga so'rov: sozlamadagi model topilmasa, mavjud modellardan mosini avtomatik tanlaydi va eslab qoladi.
-// tune(model) — model nomiga qarab so'rov tanasini tayyorlaydi (masalan, faqat 2.5 avlodida thinkingBudget).
+// «O'ylash» sozlamasi: 2.5 flash'da o'chiriladi, yangi modellarda minimal darajaga tushiriladi (javob ancha tezlashadi).
+// plain=true bo'lsa yuborilmaydi (model bu parametrni qabul qilmasa, qayta urinish uchun).
+export function thinkingFor(model, plain) {
+  if (plain) return {};
+  if (/2\.5-flash/.test(model)) return { thinkingConfig: { thinkingBudget: 0 } };
+  if (/2\.5|2\.0|1\.5/.test(model)) return {};
+  return { thinkingConfig: { thinkingLevel: /flash/.test(model) ? "minimal" : "low" } };
+}
+
+const MODEL_KEYS = { chat: "gemini_chat", voice: "gemini_voice", tts: "gemini_tts" };
+async function loadResolved(env) {
+  if (geminiState.loaded || !env.DB) return;
+  geminiState.loaded = true;
+  try {
+    const db = await requireDb(env);
+    const { results } = await db.prepare("SELECT key, value FROM settings WHERE key LIKE 'gemini_%'").all();
+    for (const [kind, key] of Object.entries(MODEL_KEYS)) {
+      const row = results.find((r) => r.key === key);
+      if (row && !geminiState.resolved[kind]) geminiState.resolved[kind] = row.value;
+    }
+  } catch (e) { console.error("Saqlangan modellarni o'qib bo'lmadi:", e?.message || e); }
+}
+async function saveResolved(env, kind, model) {
+  if (geminiState.resolved[kind] === model) return;
+  geminiState.resolved[kind] = model;
+  if (!env.DB) return;
+  try {
+    const db = await requireDb(env);
+    await db.prepare("INSERT INTO settings (key, value, updated_at) VALUES (?1, ?2, ?3) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at")
+      .bind(MODEL_KEYS[kind], model, Date.now()).run();
+  } catch (e) { console.error("Modelni saqlab bo'lmadi:", e?.message || e); }
+}
+
+// Gemini'ga so'rov: sozlamadagi model topilmasa, mavjud modellardan mosini avtomatik tanlaydi va bazada eslab qoladi.
+// tune(model, plain) — model nomiga qarab so'rov tanasini tayyorlaydi.
 export async function geminiGenerate(env, kind, tune, notConfigured = "voice_not_configured") {
   if (!env.GEMINI_API_KEY) throw new HttpError(503, notConfigured);
-  const configured = kind === "tts" ? env.GEMINI_TTS_MODEL || "gemini-2.5-flash-preview-tts" : env.GEMINI_MODEL || "gemini-flash-latest";
+  await loadResolved(env);
+  const configured = kind === "tts" ? env.GEMINI_TTS_MODEL || "gemini-2.5-flash-preview-tts"
+    : kind === "voice" ? env.GEMINI_VOICE_MODEL || env.GEMINI_MODEL || "gemini-flash-latest"
+    : env.GEMINI_MODEL || "gemini-flash-latest";
   const tried = new Set();
   let lastErr = null;
   const attempt = async (model) => {
     if (!model || tried.has(model)) return null;
     tried.add(model);
-    try {
-      const cand = await callGemini(env, model, tune(model), notConfigured);
-      geminiState.resolved[kind] = model;
-      return { cand, model };
-    } catch (e) {
-      if (e instanceof HttpError && (e.code === "model_not_found" || e.code === "bad_request")) { lastErr = e; return null; }
-      throw e;
+    for (const plain of [false, true]) {
+      try {
+        const cand = await callGemini(env, model, tune(model, plain), notConfigured);
+        await saveResolved(env, kind, model);
+        return { cand, model };
+      } catch (e) {
+        if (!(e instanceof HttpError)) throw e;
+        if (e.code === "bad_request" && !plain) continue; // parametrsiz qayta urinish
+        if (e.code === "model_not_found" || e.code === "bad_request") { lastErr = e; return null; }
+        throw e;
+      }
     }
+    return null;
   };
   for (const m of [geminiState.resolved[kind], configured, kind === "tts" ? null : "gemini-flash-latest"]) {
     const res = await attempt(m);
@@ -252,10 +291,24 @@ export async function geminiGenerate(env, kind, tune, notConfigured = "voice_not
   }
   let models = [];
   try { models = await listGeminiModels(env); } catch (e) { console.error("Gemini modellar ro'yxatini olib bo'lmadi:", e?.message || e); }
-  for (const m of pickGeminiModels(models, kind).slice(0, 4)) {
+  for (const m of pickGeminiModels(models, kind === "tts" ? "tts" : "chat").slice(0, 4)) {
     const res = await attempt(m);
     if (res) return res;
   }
   throw lastErr || new HttpError(502, "model_not_found");
+}
+
+// Matnni Gemini ovozida o'qish: base64 PCM va uning formati
+export async function synthesize(env, text) {
+  const { cand } = await geminiGenerate(env, "tts", () => ({
+    contents: [{ parts: [{ text: `O'zbek tilida iliq va xotirjam ohangda o'qing: ${text}` }] }],
+    generationConfig: {
+      responseModalities: ["AUDIO"],
+      speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: env.GEMINI_TTS_VOICE || "Kore" } } },
+    },
+  }));
+  const part = (cand.content?.parts || []).find((p) => p.inlineData?.data);
+  if (!part) throw new HttpError(502, "ai_unavailable");
+  return { audio: part.inlineData.data, mime: part.inlineData.mimeType || "audio/L16;rate=24000" };
 }
 export const geminiResolved = () => ({ ...geminiState.resolved });

@@ -1,4 +1,4 @@
-import { HttpError, checkRateLimit, geminiGenerate, handle, json, participantId, readJson } from "../../server/lib.js";
+import { HttpError, checkRateLimit, geminiGenerate, handle, json, participantId, readJson, synthesize, thinkingFor } from "../../server/lib.js";
 
 const VOICE_SYSTEM = `Sen "RuhAI" — o'zbekistonlik talabalar uchun o'zbek tilida gaplashadigan psixologik qo'llab-quvvatlash ovozli suhbatdoshisan.
 Senga foydalanuvchining navbatdagi gapi audio ko'rinishida keladi. Ikki narsani qaytar:
@@ -6,7 +6,7 @@ Senga foydalanuvchining navbatdagi gapi audio ko'rinishida keladi. Ikki narsani 
 2) reply — unga javobing.
 Javob qoidalari:
 - Kognitiv-xulqiy terapiya (KXT) usullaridan foydalan: his-tuyg'uni aks ettirish, avtomatik fikrni aniqlash, dalillarni tekshirish, muqobil fikr topish, kichik amaliy qadam, nafas mashqlari.
-- Javob ovoz chiqarib o'qiladi: 2-4 ta qisqa, sodda gap; ro'yxat, raqamlash, qavslar va maxsus belgilar ishlatma; oxirida bitta ochiq savol ber.
+- Javob ovoz chiqarib o'qiladi: 2-3 ta qisqa, sodda gap (jami 45 so'zdan oshmasin); ro'yxat, raqamlash, qavslar va maxsus belgilar ishlatma; oxirida bitta ochiq savol ber.
 - Iliq va hurmatli ("siz" deb) gapir, o'zbek madaniyatini hisobga ol.
 - Tashxis qo'yma, dori tavsiya qilma, o'zingni psixolog deb ko'rsatma.
 - Agar foydalanuvchi o'z joniga qasd qilish, o'ziga yoki boshqaga zarar yetkazish haqida gapirsa: xavfsizligi haqida ochiq so'ra, yolg'iz emasligini ayt, darhol ishonchli inson, universitet psixologi yoki 103 yoki 112 raqamlariga murojaat qilishni so'ra.
@@ -15,7 +15,7 @@ Javob qoidalari:
 const MAX_AUDIO_B64 = 4 * 1024 * 1024; // ~3 MB WAV, 16 kHz da taxminan 90 soniya
 
 // Ovozli suhbat: audio → Gemini (nutqni matnga aylantirish + KXT javobi) → { transcript, reply }
-export const onRequestPost = handle(async ({ request, env }) => {
+export const onRequestPost = handle(async ({ request, env, waitUntil = (p) => p }) => {
   if (!env.GEMINI_API_KEY) throw new HttpError(503, "voice_not_configured");
   participantId(request);
   const body = await readJson(request, MAX_AUDIO_B64 + 64 * 1024);
@@ -35,17 +35,34 @@ export const onRequestPost = handle(async ({ request, env }) => {
   if (history.length && history[history.length - 1].role === "user") history.push({ role: "model", parts: [{ text: "Tushundim." }] });
 
   const schema = { type: "OBJECT", properties: { transcript: { type: "STRING" }, reply: { type: "STRING" } }, required: ["transcript", "reply"] };
-  const { cand } = await geminiGenerate(env, "chat", (model) => ({
+  const t0 = Date.now();
+  const { cand, model } = await geminiGenerate(env, "voice", (model, plain) => ({
     systemInstruction: { parts: [{ text: VOICE_SYSTEM }] },
     contents: [...history, { role: "user", parts: [{ inlineData: { mimeType: body.mime, data: body.audio } }, { text: "Bu foydalanuvchining navbatdagi gapi." }] }],
     generationConfig: {
-      maxOutputTokens: 2048, responseMimeType: "application/json", responseSchema: schema,
-      // «O'ylash»ni o'chirish faqat 2.5 flash avlodida qo'llab-quvvatlanadi: tezroq javob va bepul limit tejaladi
-      ...(/2\.5-flash/.test(model) ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+      maxOutputTokens: 1024, responseMimeType: "application/json", responseSchema: schema,
+      ...thinkingFor(model, plain),
     },
   }));
   const raw = (cand.content?.parts || []).map((p) => p.text || "").join("");
   let out;
   try { out = JSON.parse(raw); } catch { throw new HttpError(502, "bad_json"); }
-  return json({ transcript: String(out.transcript || "").trim(), reply: String(out.reply || "").trim() });
+  const result = { type: "text", transcript: String(out.transcript || "").trim(), reply: String(out.reply || "").trim(), model, ms: Date.now() - t0 };
+  if (!body.speak || !result.reply) return json(result);
+
+  // Oqimli javob (NDJSON): matn darhol yuboriladi, ovoz tayyor bo'lgach ikkinchi qator bo'lib keladi
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter(), enc = new TextEncoder();
+  const line = (o) => writer.write(enc.encode(JSON.stringify(o) + "\n"));
+  waitUntil((async () => {
+    try {
+      await line(result);
+      await checkRateLimit(env, request);
+      const t1 = Date.now();
+      await line({ type: "audio", ...(await synthesize(env, result.reply)), ms: Date.now() - t1 });
+    } catch (e) {
+      await line({ type: "audio_error", error: e instanceof HttpError ? e.code : "ai_unavailable" }).catch(() => {});
+    } finally { await writer.close().catch(() => {}); }
+  })());
+  return new Response(readable, { headers: { "content-type": "application/x-ndjson; charset=utf-8", "cache-control": "no-store" } });
 });

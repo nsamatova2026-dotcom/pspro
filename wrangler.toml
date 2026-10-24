@@ -16,6 +16,8 @@ AI_PROVIDER = "workers-ai"
 WORKERS_AI_MODEL = "@cf/google/gemma-3-12b-it"
 GEMINI_MODEL = "gemini-flash-latest"
 # Ovozli suhbatdosh (GEMINI_API_KEY bo'lsa ishlaydi): javoblarni o'qish uchun Gemini ovoz modeli va ovoz nomi
+# Ovozli suhbat uchun alohida model (ixtiyoriy). Tezroq javob uchun masalan "gemini-flash-lite-latest"
+# GEMINI_VOICE_MODEL = "gemini-flash-lite-latest"
 GEMINI_TTS_MODEL = "gemini-2.5-flash-preview-tts"
 GEMINI_TTS_VOICE = "Kore"
 ANTHROPIC_MODEL = "claude-opus-5-5"
