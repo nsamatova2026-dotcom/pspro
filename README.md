@@ -102,11 +102,19 @@ npm run dev                      # http://localhost:8787
 
 ## Foydalanish tartibi
 
-1. Tadqiqotchi saytni ochadi, **Psixolog paneli** bo'limida `PSY_TOKEN` kaliti bilan kiradi.
-2. **Tadqiqotlar → Yangi tadqiqot**: nomi, rozilik matni, metodikalar, to'lqinlar, guruhlar va treyninglarni belgilaydi, holatini «Faol» qilib saqlaydi.
-3. Tadqiqot sahifasidagi kod yoki taklif havolasini respondentlarga yuboradi.
-4. Respondent havolani ochadi, rozilik beradi va tasodifiy ravishda guruhga taqsimlanadi. O'lchovlar belgilangan kunlarda ochiladi.
-5. Tadqiqotchi respondentlar ishtirokini kuzatadi, statistikani ko'radi va ma'lumotlarni CSV ko'rinishida yuklab oladi.
+Birinchi kirishda platforma «Respondent» yoki «Tadqiqotchi» rolini tanlashni so'raydi va faqat shu rolga kerakli bo'limlarni ko'rsatadi. Rolni istalgan vaqtda yon menyudagi tugma orqali almashtirish mumkin. Telefonda bo'limlar pastki menyuda joylashgan.
+
+**Tadqiqotchi**
+1. **Boshqaruv paneli**da tadqiqotchi kaliti (`PSY_TOKEN`) bilan kiradi. Panelda faol tadqiqotlar, respondentlar soni, so'nggi javoblar, ochiq xavf signallari va «Ishni boshlash» bo'yicha 4 qadam ko'rinadi.
+2. **Yangi tadqiqot** tugmasini bosib, tayyor shablonni tanlaydi: ruhiy holat skriningi, farovonlik va bardoshlilik, intervensiya samaradorligi (RNT), metodikani validatsiya qilish yoki bo'sh tadqiqot.
+3. Usta 4 qadamda olib boradi: asosiy ma'lumot va rozilik matni → metodikalar → o'lchovlar va guruhlar → tekshirish. Oxirida «Saqlash va e'lon qilish» bosiladi.
+4. Tadqiqot sahifasida kod, havola va QR-kod chiqadi. «Taklif matnini nusxalash» Telegram yoki pochta uchun tayyor matn beradi, «Ekranda ko'rsatish» kod va QR-kodni auditoriyada proyektorga katta qilib chiqaradi.
+5. Respondentlar ishtirokini kuzatadi, statistika, savollar tahlili va APA matnini ko'radi, ma'lumotlarni CSV ko'rinishida yuklab oladi.
+
+**Respondent**
+1. Taklif havolasi yoki QR-kod orqali kiradi (rol avtomatik tanlanadi) yoki bosh sahifada kodni kiritadi.
+2. Rozilik matnini tasdiqlaydi. Bosh sahifada bugungi vazifalar, oxirgi natija va tezkor harakatlar (test, bugungi mashq, kunlik holat, suhbatdosh) ko'rinadi.
+3. So'rovnomalar bitta ekranda bitta savol ko'rinishida ochiladi: javob tanlanganda keyingi savolga avtomatik o'tiladi. Xohlasa, «Hammasini ko'rsatish» tugmasi bilan barcha savollarni bir sahifada ko'radi.
 
 ## API
 | Yo'l | Kim uchun | Vazifasi |

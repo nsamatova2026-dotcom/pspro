@@ -266,14 +266,105 @@ details.bank-card[open] summary { margin-bottom: 10px; }
   .opts[data-n="5"], .opts[data-n="6"], .opts[data-n="7"] { grid-template-columns: repeat(3, 1fr); }
 }
 
+/* Qobiq: rollar, ikonkalar, bosh sahifalar, usta, bildirishnomalar */
+.ic { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.navbtn { justify-content: flex-start; gap: 10px; }
+.navbtn .lbl-s { display: none; }
+.navbtn[aria-current="page"] .ic { color: var(--accent); }
+.role-seg { width: 100%; }
+.role-seg button { flex: 1; padding-inline: 8px; }
+body[data-role=""] #nav, body[data-role=""] #roleSeg { display: none; }
+.side-foot .linkish { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.hero { display: flex; flex-direction: column; gap: 4px; }
+.hero h2 { font-family: var(--f-display); font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 600; letter-spacing: -0.01em; }
+.hero .date { color: var(--muted); text-transform: capitalize; }
+.welcome { max-width: 820px; display: flex; flex-direction: column; gap: 22px; }
+.role-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.role-card { text-align: left; padding: 22px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; display: flex; flex-direction: column; gap: 10px; color: inherit; font: inherit; }
+.role-card:hover { border-color: var(--accent); }
+.role-card .ic { width: 30px; height: 30px; color: var(--accent); }
+.role-card b { font-size: 1.1rem; }
+.role-card ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 0.88rem; display: flex; flex-direction: column; gap: 3px; }
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.tile { text-align: left; display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; cursor: pointer; color: inherit; font: inherit; min-width: 0; }
+.tile:hover { border-color: var(--accent); }
+.tile .ic { width: 22px; height: 22px; color: var(--accent); }
+.tile b { font-size: 0.98rem; }
+.home-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; align-items: start; }
+.home-grid > * { min-width: 0; }
+.guide { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.guide li { border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px; background: var(--surface); min-width: 0; }
+.guide .nb { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-family: var(--f-mono); font-weight: 600; font-size: 0.85rem; }
+.guide li.done .nb { background: var(--ok); color: var(--surface); }
+.guide li.done b { color: var(--muted); }
+.guide li > div:last-child { margin-top: auto; }
+.study-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.study-card { text-align: left; display: flex; flex-direction: column; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; cursor: pointer; color: inherit; font: inherit; min-width: 0; }
+.study-card:hover { border-color: var(--accent); }
+.progress { height: 6px; background: var(--accent-soft); border-radius: 3px; overflow: hidden; }
+.progress i { display: block; height: 100%; background: var(--accent); }
+.wz-steps { display: flex; gap: 8px; flex-wrap: wrap; }
+.wz-steps button { flex: 1; min-width: 150px; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px 12px; cursor: pointer; display: flex; gap: 10px; align-items: center; color: var(--muted); font: inherit; }
+.wz-steps button[aria-current="step"] { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); font-weight: 600; }
+.wz-steps .nb { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--bg); font-family: var(--f-mono); font-size: 0.8rem; flex: none; }
+.wz-steps button[aria-current="step"] .nb { background: var(--accent); color: var(--accent-ink); }
+.wz-step { display: flex; flex-direction: column; gap: 14px; }
+.wz-nav { justify-content: space-between; border-top: 1px solid var(--line); padding-top: 14px; }
+.tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.tpl { text-align: left; display: flex; flex-direction: column; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; cursor: pointer; color: inherit; font: inherit; }
+.tpl:hover { border-color: var(--accent); }
+.review { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 0.9rem; }
+.review dt { color: var(--muted); }
+.review dd { margin: 0; }
+.invite { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 22px; align-items: center; }
+.qr { background: #fff; padding: 8px; border-radius: 10px; border: 1px solid var(--line); width: 132px; height: 132px; }
+.qr svg { display: block; }
+.invite-actions { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.projector { position: fixed; inset: 0; z-index: 50; background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3vh; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); text-align: center; }
+.projector .proj-title { font-size: clamp(1.1rem, 2.6vw, 2rem); font-weight: 600; max-width: 30ch; text-wrap: balance; }
+.projector .proj-code { font-family: var(--f-display); font-size: clamp(3rem, 12vw, 9rem); font-weight: 700; letter-spacing: 0.08em; line-height: 1; color: var(--accent); }
+.projector #projQr { background: #fff; padding: 16px; border-radius: 16px; }
+.projector .proj-close { position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); }
+.step-bar { display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px; }
+.step-track { height: 6px; border-radius: 3px; background: var(--accent-soft); overflow: hidden; }
+.step-track i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.25s; }
+.step-nav { justify-content: space-between; }
+.stepper fieldset.q { display: none; }
+.stepper fieldset.q.cur { display: grid; border-top-width: 0; padding-top: 4px; }
+.stepper fieldset.q.cur legend { font-size: 1.08rem; font-weight: 600; }
+.stepper .opts { grid-template-columns: 1fr !important; gap: 8px; margin-top: 12px; }
+.stepper .opt span { flex-direction: row; align-items: center; gap: 12px; padding: 12px 14px; font-size: 0.95rem; }
+.stepper .opt span b { min-width: 1.4em; }
+#toasts { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 60; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast { background: var(--ink); color: var(--bg); padding: 10px 14px; border-radius: 10px; font-size: 0.88rem; box-shadow: 0 6px 20px rgb(0 0 0 / 0.18); transition: opacity 0.3s, transform 0.3s; max-width: 360px; }
+.toast.out { opacity: 0; transform: translateY(6px); }
+.toast.err { background: var(--crit); color: var(--surface); }
+@media (max-width: 860px) {
+  .tiles, .guide { grid-template-columns: repeat(2, 1fr); }
+  .home-grid { grid-template-columns: 1fr; }
+  .invite { grid-template-columns: 1fr; justify-items: start; }
+  #toasts { left: 16px; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (max-width: 560px) {
+  .role-cards { grid-template-columns: 1fr; }
+  .tiles { grid-template-columns: 1fr 1fr; }
+  .guide { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 860px) {
   .app { grid-template-columns: minmax(0, 1fr); }
   .side, nav { min-width: 0; }
-  .side { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding-block: 14px; padding-right: max(16px, env(safe-area-inset-right, 0px)); gap: 12px; }
-  nav { flex-direction: row; overflow-x: auto; gap: 4px; }
-  .navbtn { white-space: nowrap; }
-  .navbtn small, .role, .side-foot { display: none; }
-  main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-block: 22px 48px; }
+  .side { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding-block: 12px; padding-right: max(16px, env(safe-area-inset-right, 0px)); gap: 10px; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .brand .tag, .side-foot { display: none; }
+  .role-seg { width: auto; }
+  nav#nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; flex-direction: row; justify-content: space-around; gap: 0; overflow-x: auto; background: var(--surface); border-top: 1px solid var(--line); padding: 6px max(6px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(6px, env(safe-area-inset-left, 0px)); }
+  .navbtn { flex: 1; flex-direction: column; justify-content: center; gap: 3px; padding: 6px 2px; font-size: 0.68rem; min-width: 54px; white-space: nowrap; }
+  .navbtn .lbl { display: none; }
+  .navbtn .lbl-s { display: block; }
+  .navbtn[aria-current="page"] { background: none; color: var(--accent); }
+  .navbtn .ic { width: 20px; height: 20px; }
+  main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-block: 20px calc(92px + env(safe-area-inset-bottom, 0px)); }
+  body[data-role=""] main { padding-bottom: 32px; }
   .kpis { grid-template-columns: repeat(2, 1fr); }
   .design { grid-template-columns: 1fr; }
 }
@@ -288,28 +379,82 @@ details.bank-card[open] summary { margin-bottom: 10px; }
 </style>
 
 <div class="app">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></symbol>
+    <symbol id="i-clip" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9z"/><path d="M9 13l2 2 4-4"/></symbol>
+    <symbol id="i-test" viewBox="0 0 24 24"><path d="M4 6h11M4 12h11M4 18h11"/><circle cx="19" cy="6" r="1.4"/><circle cx="19" cy="12" r="1.4"/><circle cx="19" cy="18" r="1.4"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19c0-8 6-14 15-15-1 9-7 15-15 15z"/><path d="M5 19l7-7"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 5a2 2 0 0 1 2-2h12v15H7a2 2 0 0 0-2 2z"/><path d="M5 20a2 2 0 0 0 2 1h12v-3"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6"/><path d="M10 3v6l-5.5 9.2A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.8L14 9V3"/><path d="M7.5 15h9"/></symbol>
+    <symbol id="i-lib" viewBox="0 0 24 24"><path d="M5 4v16M9.5 4v16"/><path d="M14 5l4.5 15"/></symbol>
+    <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
+    <symbol id="i-sigma" viewBox="0 0 24 24"><path d="M17 5H7l6 7-6 7h10"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/></symbol>
+  </svg>
   <aside class="side">
     <div class="brand">
       <div class="logo">Ruh<span>AI</span></div>
       <div class="tag">Psixologik tadqiqotlar platformasi</div>
     </div>
-    <nav id="nav" aria-label="Modullar">
-      <div class="role">Respondent</div>
-      <button class="navbtn" data-view="tadqiqotlarim">Tadqiqotlarim</button>
-      <button class="navbtn" data-view="testlar">Testlar <small>11 shkala</small></button>
-      <button class="navbtn" data-view="treyninglar">Treyninglar <small>12 mashq</small></button>
-      <button class="navbtn" data-view="kundalik">Kundalik <small>NLP</small></button>
-      <button class="navbtn" data-view="suhbat">Suhbatdosh <small>KXT</small></button>
-      <div class="role">Psixolog va tadqiqotchi</div>
-      <button class="navbtn" data-view="tadqiqotlar">Tadqiqotlar</button>
-      <button class="navbtn" data-view="bank">Instrumentlar banki</button>
-      <button class="navbtn" data-view="panel">Psixolog paneli</button>
-      <button class="navbtn" data-view="tadqiqot">Gipotezalar <small>H2 · H3</small></button>
+    <div class="seg role-seg" id="roleSeg" role="group" aria-label="Rol"><button type="button" data-role="respondent" aria-pressed="false">Respondent</button><button type="button" data-role="researcher" aria-pressed="false">Tadqiqotchi</button></div>
+    <nav id="nav" aria-label="Bo'limlar">
+      <button class="navbtn" data-view="bosh" data-role="respondent"><svg class="ic"><use href="#i-home"/></svg><span class="lbl">Bosh sahifa</span><span class="lbl-s">Bosh</span></button>
+      <button class="navbtn" data-view="tadqiqotlarim" data-role="respondent"><svg class="ic"><use href="#i-clip"/></svg><span class="lbl">Tadqiqotlarim</span><span class="lbl-s">Tadqiqot</span></button>
+      <button class="navbtn" data-view="testlar" data-role="respondent"><svg class="ic"><use href="#i-test"/></svg><span class="lbl">Testlar</span><span class="lbl-s">Testlar</span></button>
+      <button class="navbtn" data-view="treyninglar" data-role="respondent"><svg class="ic"><use href="#i-leaf"/></svg><span class="lbl">Treyninglar</span><span class="lbl-s">Mashqlar</span></button>
+      <button class="navbtn" data-view="kundalik" data-role="respondent"><svg class="ic"><use href="#i-book"/></svg><span class="lbl">Kundalik</span><span class="lbl-s">Kundalik</span></button>
+      <button class="navbtn" data-view="suhbat" data-role="respondent"><svg class="ic"><use href="#i-chat"/></svg><span class="lbl">Suhbatdosh</span><span class="lbl-s">Suhbat</span></button>
+      <button class="navbtn" data-view="boshqaruv" data-role="researcher"><svg class="ic"><use href="#i-grid"/></svg><span class="lbl">Boshqaruv paneli</span><span class="lbl-s">Panel</span></button>
+      <button class="navbtn" data-view="tadqiqotlar" data-role="researcher"><svg class="ic"><use href="#i-flask"/></svg><span class="lbl">Tadqiqotlar</span><span class="lbl-s">Tadqiqotlar</span></button>
+      <button class="navbtn" data-view="bank" data-role="researcher"><svg class="ic"><use href="#i-lib"/></svg><span class="lbl">Instrumentlar banki</span><span class="lbl-s">Bank</span></button>
+      <button class="navbtn" data-view="panel" data-role="researcher"><svg class="ic"><use href="#i-pulse"/></svg><span class="lbl">Monitoring</span><span class="lbl-s">Monitoring</span></button>
+      <button class="navbtn" data-view="tadqiqot" data-role="researcher"><svg class="ic"><use href="#i-sigma"/></svg><span class="lbl">Gipotezalar</span><span class="lbl-s">Gipoteza</span></button>
     </nav>
     <div class="side-foot">RuhAI tashxis qo'ymaydi va psixologni almashtirmaydi. Shoshilinch holatda: <b>103</b> (tez yordam) yoki <b>112</b>.</div>
   </aside>
 
   <main>
+    <!-- XUSH KELIBSIZ: rol tanlash -->
+    <section class="view welcome" id="v-xush" hidden>
+      <div class="hero">
+        <div class="eyebrow">RuhAI · psixologik tadqiqotlar platformasi</div>
+        <h2>Xush kelibsiz! Platformadan kim sifatida foydalanasiz?</h2>
+        <p class="lead">Tanlovingizga qarab faqat sizga kerakli bo'limlar ko'rsatiladi. Keyinroq yon menyudagi tugma orqali rolni almashtirishingiz mumkin.</p>
+      </div>
+      <div class="role-cards">
+        <button type="button" class="role-card" data-pick-role="respondent">
+          <svg class="ic"><use href="#i-user"/></svg>
+          <b>Men respondentman</b>
+          <ul><li>Tadqiqotlarda kod orqali ishtirok etaman</li><li>Testlar orqali o'z holatimni bilib olaman</li><li>Psixologik mashqlar va AI-suhbatdoshdan foydalanaman</li></ul>
+        </button>
+        <button type="button" class="role-card" data-pick-role="researcher">
+          <svg class="ic"><use href="#i-flask"/></svg>
+          <b>Men tadqiqotchi yoki psixologman</b>
+          <ul><li>Banklardan metodikalarni tanlab tadqiqot tuzaman</li><li>Respondentlarni taklif qilib, ishtirokini kuzataman</li><li>Natijalarni statistik tahlil qilaman va eksport qilaman</li></ul>
+        </button>
+      </div>
+      <p class="note">Respondent ismi so'ralmaydi: javoblar anonim kod bilan saqlanadi. Shoshilinch holatda: 103 yoki 112.</p>
+    </section>
+
+    <!-- RESPONDENT: BOSH SAHIFA -->
+    <section class="view" id="v-bosh" hidden>
+      <div class="hero"><h2 id="homeGreet">Assalomu alaykum!</h2><p class="date" id="homeDate"></p></div>
+      <div class="home-grid">
+        <div class="panel" id="homeTasks"><h3>Bugungi vazifalar</h3><p class="note">Yuklanmoqda…</p></div>
+        <div class="panel" id="homeLast"><h3>Oxirgi natija</h3><p class="note">Hali test topshirmagansiz.</p></div>
+      </div>
+      <h3>Tezkor harakatlar</h3>
+      <div class="tiles" id="homeTiles"></div>
+    </section>
+
+    <!-- TADQIQOTCHI: BOSHQARUV PANELI -->
+    <section class="view" id="v-boshqaruv" hidden>
+      <div class="hero"><div class="eyebrow">Tadqiqotchi</div><h2>Boshqaruv paneli</h2><p class="lead">Tadqiqotlaringiz holati, ishni boshlash bo'yicha qadamlar va e'tibor talab qiladigan holatlar.</p></div>
+      <div id="resHome" class="stack"></div>
+    </section>
+
     <!-- TADQIQOTLARIM (respondent) -->
     <section class="view" id="v-tadqiqotlarim" hidden>
       <div class="head">
@@ -317,6 +462,7 @@ details.bank-card[open] summary { margin-bottom: 10px; }
         <h2>Mening tadqiqotlarim</h2>
         <p class="lead">Tadqiqotchidan olgan kod orqali tadqiqotga qo'shiling. O'lchovlar belgilangan kunlarda ochiladi, tayinlangan treyninglar shu yerda ko'rinadi.</p>
       </div>
+      <div class="panel" id="taskRunner" hidden></div>
       <form class="panel" id="joinForm">
         <h3>Tadqiqotga qo'shilish</h3>
         <div class="row" style="align-items: flex-end;">
@@ -327,7 +473,6 @@ details.bank-card[open] summary { margin-bottom: 10px; }
       </form>
       <div class="panel" id="joinInfo" hidden></div>
       <p class="note" id="studiesOffline" hidden>Tadqiqotlarda ishtirok etish uchun platforma server bilan ishlashi kerak (Cloudflare yoki claude.ai).</p>
-      <div class="panel" id="taskRunner" hidden></div>
       <div class="stack" id="myStudies"></div>
     </section>
 
@@ -485,7 +630,7 @@ details.bank-card[open] summary { margin-bottom: 10px; }
     <!-- PANEL -->
     <section class="view" id="v-panel" hidden>
       <div class="head">
-        <div class="eyebrow">5-modul · Psixolog paneli</div>
+        <div class="eyebrow">Monitoring · umumiy rozilik bergan talabalar</div>
         <h2>Guruh monitoringi</h2>
         <p class="lead">Psixolog talabalar holatining dinamikasini kuzatadi va xavf ostidagilarni birinchi navbatda ko'radi. Ismlar o'rniga anonim kodlar ishlatiladi.</p>
       </div>
@@ -564,6 +709,15 @@ details.bank-card[open] summary { margin-bottom: 10px; }
       </div>
     </section>
   </main>
+  <div id="toasts" aria-live="polite"></div>
+  <div class="projector" id="projector" hidden>
+    <button type="button" class="btn proj-close" data-proj-close>Yopish</button>
+    <div class="proj-title"></div>
+    <div class="note">Tadqiqot kodi</div>
+    <div class="proj-code"></div>
+    <div id="projQr"></div>
+    <div class="proj-url note"></div>
+  </div>
 </div>
 
 <script src="js/banks.js"></script>
@@ -577,17 +731,35 @@ const store = {
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const fmtDate = t => new Date(t).toLocaleDateString("uz-UZ", { day: "2-digit", month: "2-digit", year: "numeric" });
 
-/* ---------- Navigatsiya ---------- */
-const views = ["tadqiqotlarim", "testlar", "treyninglar", "kundalik", "suhbat", "tadqiqotlar", "bank", "panel", "tadqiqot"];
-function show(v) {
-  if (!views.includes(v)) v = "tadqiqotlarim";
-  views.forEach(x => { $("#v-" + x).hidden = x !== v; });
-  document.querySelectorAll(".navbtn").forEach(b => { if (b.dataset.view === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
-  try { history.replaceState(null, "", "#" + v); } catch {}
-}
-$("#nav").addEventListener("click", e => { const b = e.target.closest(".navbtn"); if (b) show(b.dataset.view); });
+/* ---------- Navigatsiya va rollar ---------- */
+const views = ["xush", "bosh", "boshqaruv", "tadqiqotlarim", "testlar", "treyninglar", "kundalik", "suhbat", "tadqiqotlar", "bank", "panel", "tadqiqot"];
+const ROLE_HOME = { respondent: "bosh", researcher: "boshqaruv" };
 // #join-KOD havolasi respondentni to'g'ridan-to'g'ri tadqiqotga qo'shilish oynasiga olib keladi
 const joinMatch = location.hash.match(/^#join-([A-Za-z0-9]{4,12})$/);
+let role = joinMatch ? "respondent" : store.get("role", null), currentView = null, appReady = false;
+if (!ROLE_HOME[role]) role = null;
+function setRole(r, go = true) {
+  role = r; store.set("role", r);
+  document.body.dataset.role = r || "";
+  document.querySelectorAll("#nav .navbtn").forEach(b => { b.hidden = b.dataset.role !== r; });
+  document.querySelectorAll("#roleSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.role === r));
+  if (go) show(ROLE_HOME[r]);
+}
+function show(v) {
+  if (!role) v = "xush";
+  else if (!views.includes(v) || v === "xush") v = ROLE_HOME[role];
+  views.forEach(x => { $("#v-" + x).hidden = x !== v; });
+  document.querySelectorAll(".navbtn").forEach(b => { if (b.dataset.view === v) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+  if (currentView !== v) window.scrollTo(0, 0);
+  currentView = v;
+  try { history.replaceState(null, "", "#" + v); } catch {}
+  if (appReady) refreshView(v);
+}
+$("#nav").addEventListener("click", e => { const b = e.target.closest(".navbtn"); if (b) show(b.dataset.view); });
+$("#roleSeg").addEventListener("click", e => { const b = e.target.closest("[data-role]"); if (b && b.dataset.role !== role) setRole(b.dataset.role); });
+$("#v-xush").addEventListener("click", e => { const b = e.target.closest("[data-pick-role]"); if (b) setRole(b.dataset.pickRole); });
+document.body.dataset.role = role || "";
+if (role) setRole(role, false);
 show(joinMatch ? "tadqiqotlarim" : location.hash.slice(1));
 window.addEventListener("hashchange", () => { const v = location.hash.slice(1); if (views.includes(v)) show(v); });
 
@@ -696,6 +868,7 @@ function renderTest() {
   $("#testLead").textContent = t.lead + " Har bir savolga bitta javob tanlang.";
   $("#instMeta").textContent = `${t.items.length} savol · taxminan ${t.minutes} daqiqa`;
   $("#questions").innerHTML = questionsHtml(cur, "self-");
+  stepperize($("#testform"));
   $("#result").innerHTML = "";
   updateProgress();
 }
@@ -1444,7 +1617,7 @@ renderStats();
 
 function copyPre(pre, note) {
   const fallback = () => { const r = document.createRange(); r.selectNodeContents(pre); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); note.textContent = "Matn belgilandi, Ctrl+C bilan nusxalang."; };
-  try { navigator.clipboard.writeText(pre.textContent).then(() => { note.textContent = "Nusxalandi."; }, fallback); } catch { fallback(); }
+  try { navigator.clipboard.writeText(pre.textContent).then(() => { note.textContent = "Nusxalandi."; toast("Nusxalandi"); }, fallback); } catch { fallback(); }
 }
 $("#copyCsv").onclick = () => copyPre($("#csv"), $("#copyNote"));
 $("#copyExport").onclick = () => copyPre($("#exportCsv"), $("#copyExportNote"));
@@ -1550,6 +1723,7 @@ $("#tRunner").addEventListener("click", e => {
     const sids = Object.entries(myDoc?.studies || {}).filter(([sid, en]) => { const st = studyCache[sid]; return st && st.status !== "closed" && (armOf(st, en)?.trainings || []).includes(id); }).map(([sid]) => sid);
     if (sids.length) writeMine(d => sids.forEach(sid => { const en = d.studies[sid]; if (!en) return; en.trainings ??= []; en.trainings.push({ id, date, pre, post }); })).then(renderMyStudies, () => {});
     stopTTimer();
+    toast("Mashq saqlandi");
     $("#tRunner").innerHTML = `<h3>Barakalla!</h3><p>«${esc(t.title)}» mashqi saqlandi. Kayfiyat: ${pre} → ${post}${post > pre ? " (yaxshilandi)" : ""}.</p><div><button type="button" class="btn" data-tclose>Yopish</button></div>`;
     renderTHistory();
   }
@@ -1613,6 +1787,7 @@ $("#joinInfo").addEventListener("click", async e => {
     await writeMine(d => { d.studies ??= {}; d.studies[st.id] = { joinedAt: Date.now(), consentAt: Date.now(), arm, responses: [], trainings: [] }; });
     joinCandidate = null; renderJoinCandidate(); $("#joinCode").value = "";
     $("#joinStatus").textContent = "Tadqiqotga qo'shildingiz. Birinchi topshiriqlar quyida.";
+    toast("Tadqiqotga qo'shildingiz");
     renderMyStudies(); renderTrainingList();
   } catch (err) { e.target.disabled = false; $("#joinStatus").textContent = "Qo'shilib bo'lmadi: " + (err?.code || "xato"); }
 });
@@ -1624,6 +1799,7 @@ async function renderMyStudies() {
   if (!enr.length) { box.innerHTML = `<p class="note">Siz hali hech qaysi tadqiqotda ishtirok etmayapsiz. Tadqiqotchidan olgan kodni yuqorida kiriting.</p>`; return; }
   const loaded = await Promise.all(enr.map(([sid]) => loadStudy(sid)));
   box.innerHTML = enr.map(([sid, e], i) => studyTasksHtml(sid, e, loaded[i])).join("");
+  if (currentView === "bosh") renderRespHome();
 }
 const waveOpenAt = (e, w) => e.joinedAt + (w.day || 0) * DAY;
 // Anketalar (demografiya) faqat birinchi o'lchovda, shkalalar har bir o'lchovda to'ldiriladi
@@ -1672,6 +1848,7 @@ function openTask(sid, wave, inst) {
       <div class="row" style="justify-content:space-between"><span class="note" id="taskProgress"></span><button type="submit" class="btn primary" id="taskSubmit">Javoblarni yuborish</button></div>
     </form>`;
   updateTaskProgress();
+  stepperize($("#taskForm"));
   box.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 function updateTaskProgress() {
@@ -1695,6 +1872,7 @@ $("#taskRunner").addEventListener("submit", async e => {
       en.responses.push(rec);
     });
   } catch (err) { $("#taskSubmit").disabled = false; $("#taskProgress").textContent = "Yuborilmadi: " + (err?.code || "xato") + ". Qayta urinib ko'ring."; return; }
+  toast("Javoblaringiz saqlandi");
   $("#taskRunner").innerHTML = `<div class="row" style="justify-content:space-between"><h3>Javoblaringiz qabul qilindi</h3><button type="button" class="btn" data-task-close>Yopish</button></div>
     ${!isForm(inst) && st.showResults ? resultHtml(inst, res) : `<p>Rahmat! Keyingi topshiriqqa o'tishingiz mumkin.</p>${res.sos ? SOS_HTML : ""}`}`;
   renderMyStudies();
@@ -1741,6 +1919,7 @@ function renderStudiesView() {
   }
   renderEditor();
   renderStudyDetail();
+  if (currentView === "boshqaruv") renderResHome();
 }
 $("#rsBody").addEventListener("click", e => {
   const tr = e.target.closest("[data-study]"); if (!tr) return;
@@ -1748,7 +1927,7 @@ $("#rsBody").addEventListener("click", e => {
   renderStudiesView(); $("#studyDetail").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 $("#rsBody").addEventListener("keydown", e => { if (e.key === "Enter") e.target.closest("[data-study]")?.click(); });
-$("#rsNew").onclick = () => { editing = newStudy(); selStudy = null; demoRows = null; renderStudiesView(); $("#studyEditor").scrollIntoView({ behavior: "smooth", block: "start" }); };
+$("#rsNew").onclick = () => startNewStudy();
 const openDemo = () => { selStudy = sampleStudy(); demoRows = simulateRespondents(selStudy, 80); selResp = null; statWave = null; editing = null; renderStudiesView(); $("#studyDetail").scrollIntoView({ behavior: "smooth", block: "start" }); };
 $("#rsDemo").onclick = openDemo; $("#rsDemo2").onclick = openDemo;
 
@@ -1757,40 +1936,65 @@ function renderEditor() {
   const s = editing, box = $("#studyEditor");
   if (!s) { box.hidden = true; return; }
   box.hidden = false;
+  if (s.__fresh) { box.innerHTML = templatesHtml(); return; }
   const exists = studies.some(x => x.id === s.id);
   const hasData = exists && allParticipants.some(p => p.studies?.[s.id]);
+  if (wzStep < 1) wzStep = 1;
   const instChecks = DOMAINS.map(d => {
     const ids = Object.keys(INSTRUMENTS).filter(id => INSTRUMENTS[id].domain === d);
     return `<div class="inst-group"><h4>${esc(d)}</h4>${ids.map(id => { const t = INSTRUMENTS[id]; return `<label class="check" for="ei-${id}"><input type="checkbox" id="ei-${id}" data-inst="${id}"${s.instruments.includes(id) ? " checked" : ""}><span><b>${esc(t.name)}</b> · ${esc(t.full)} <span class="note num">${totalCount(id)} savol · ${t.minutes} daq</span></span></label>`; }).join("")}</div>`;
   }).join("");
-  const waves = s.waves.map((w, i) => `<div class="row wave-row"><input class="inp" data-wave-label="${i}" value="${esc(w.label)}" aria-label="To'lqin nomi"><label class="note" for="wd-${i}">kuni</label><input class="inp num" id="wd-${i}" type="number" min="0" data-wave-day="${i}" value="${w.day}" style="width:84px"><button type="button" class="btn small" data-wave-del="${i}"${s.waves.length < 2 ? " disabled" : ""}>O'chirish</button></div>`).join("");
+  const waves = s.waves.map((w, i) => `<div class="row wave-row"><input class="inp" data-wave-label="${i}" value="${esc(w.label)}" aria-label="O'lchov nomi"><label class="note" for="wd-${i}">kuni</label><input class="inp num" id="wd-${i}" type="number" min="0" data-wave-day="${i}" value="${w.day}" style="width:84px"><button type="button" class="btn small" data-wave-del="${i}"${s.waves.length < 2 ? " disabled" : ""}>O'chirish</button></div>`).join("");
   const arms = s.arms.map((a, i) => `<div class="arm"><input class="inp" data-arm-name="${i}" value="${esc(a.name)}" aria-label="Guruh nomi"><span class="note">Tayinlanadigan treyninglar:</span><div class="tr-grid">${Object.entries(TRAININGS).map(([id, t]) => `<label class="check small" for="at-${i}-${id}"><input type="checkbox" id="at-${i}-${id}" data-arm-tr="${i}|${id}"${a.trainings.includes(id) ? " checked" : ""}><span>${esc(t.title)}</span></label>`).join("")}</div></div>`).join("");
+  const step = n => wzStep === n ? "" : " hidden";
   box.innerHTML = `<div class="row" style="justify-content:space-between"><h3>${exists ? "Tadqiqotni tahrirlash" : "Yangi tadqiqot"}</h3><button type="button" class="btn" data-ed-close>Yopish</button></div>
-    <div class="form-grid">
-      <label class="field wide" for="esTitle">Tadqiqot nomi<input id="esTitle" class="inp" value="${esc(s.title)}" placeholder="Masalan, Talabalarda stressni kamaytirish dasturi"></label>
-      <label class="field wide" for="esDesc">Respondentlar uchun qisqa tavsif<textarea id="esDesc" rows="2">${esc(s.description)}</textarea></label>
-      <label class="field wide" for="esConsent">Xabardor qilingan rozilik matni<textarea id="esConsent" rows="5">${esc(s.consent)}</textarea></label>
-      <label class="field" for="esCode">Qo'shilish kodi (4–12 lotin harf yoki raqam)<input id="esCode" class="inp num" value="${esc(s.code)}" maxlength="12"></label>
-      <label class="field" for="esStatus">Holati<select id="esStatus">${[["draft", "Qoralama"], ["active", "Faol: respondentlar qo'shila oladi"], ["closed", "Yakunlangan"]].map(([v, l]) => `<option value="${v}"${s.status === v ? " selected" : ""}>${l}</option>`).join("")}</select></label>
-      <label class="field" for="esRand">Guruhlarga taqsimlash<select id="esRand"><option value="balanced"${(s.randomization || "balanced") === "balanced" ? " selected" : ""}>Muvozanatlashtirilgan: guruhlar teng to'ladi</option><option value="simple"${s.randomization === "simple" ? " selected" : ""}>Oddiy tasodifiy</option></select></label>
-      <label class="check wide" for="esShow"><input type="checkbox" id="esShow"${s.showResults ? " checked" : ""}><span>Respondentga test natijasi va talqinini ko'rsatish</span></label>
+    <div class="wz-steps">${WZ_STEPS.map((l, i) => `<button type="button" data-wz="${i + 1}"${wzStep === i + 1 ? ` aria-current="step"` : ""}><span class="nb">${i + 1}</span>${l}</button>`).join("")}</div>
+    <div class="wz-step" data-step="1"${step(1)}>
+      <div class="form-grid">
+        <label class="field wide" for="esTitle">Tadqiqot nomi<input id="esTitle" class="inp" value="${esc(s.title)}" placeholder="Masalan, Talabalarda stressni kamaytirish dasturi"></label>
+        <label class="field wide" for="esDesc">Respondentlar uchun qisqa tavsif<textarea id="esDesc" rows="2" placeholder="Tadqiqot nimaga bag'ishlangan, ishtirokchidan nima talab qilinadi">${esc(s.description)}</textarea></label>
+        <label class="field wide" for="esConsent">Xabardor qilingan rozilik matni <span class="note">(namunaviy matn tayyor, kerak bo'lsa o'zgartiring)</span><textarea id="esConsent" rows="5">${esc(s.consent)}</textarea></label>
+      </div>
     </div>
-    <div class="row" style="justify-content:space-between"><h4>Metodikalar</h4><span class="note" id="esTime"></span></div>
-    <div class="inst-grid">${instChecks}</div>
-    <h4>O'lchov to'lqinlari</h4>
-    <p class="note">«Kuni» — respondent qo'shilgan kundan boshlab o'lchov ochiladigan kun. Shkalalar har bir to'lqinda, demografik anketa faqat birinchi to'lqinda to'ldiriladi.</p>
-    ${waves}<div><button type="button" class="btn small" data-wave-add>To'lqin qo'shish</button></div>
-    <h4>Dizayn: guruhlar va treyninglar</h4>
-    <div class="seg" role="group" aria-label="Guruhlar soni">${[1, 2, 3].map(n => `<button type="button" data-arms="${n}" aria-pressed="${s.arms.length === n}">${["Bir guruhli", "Ikki guruh (RNT)", "Uch guruh"][n - 1]}</button>`).join("")}</div>
-    <p class="note">Respondentlar guruhlarga tasodifiy taqsimlanadi; muvozanatlashtirilgan usulda yangi respondent eng kam to'lgan guruhga tushadi (Cloudflare serverida). Har bir guruhga tayinlangan treyninglar respondentning topshiriqlar ro'yxatida ko'rinadi.${hasData ? " Diqqat: tadqiqotda allaqachon ma'lumot bor, guruhlar va to'lqinlarni o'zgartirish tahlilni buzishi mumkin." : ""}</p>
-    ${arms}
-    <div class="row" style="justify-content:space-between"><span class="note" id="esMsg"></span><div class="row" id="esActions">${exists ? `<button type="button" class="btn danger" data-ed-del>O'chirish</button>` : ""}<button type="button" class="btn primary" data-ed-save>Saqlash</button></div></div>`;
+    <div class="wz-step" data-step="2"${step(2)}>
+      <div class="row" style="justify-content:space-between"><p class="note">Tadqiqotda o'lchanadigan metodikalarni belgilang. Batafsil ma'lumot «Instrumentlar banki» bo'limida.</p><span class="note" id="esTime"></span></div>
+      <div class="inst-grid">${instChecks}</div>
+    </div>
+    <div class="wz-step" data-step="3"${step(3)}>
+      <h4>O'lchovlar</h4>
+      <p class="note">«Kuni» — respondent qo'shilgan kundan boshlab o'lchov ochiladigan kun. Shkalalar har bir o'lchovda, demografik anketa faqat birinchisida to'ldiriladi.</p>
+      ${waves}<div><button type="button" class="btn small" data-wave-add>O'lchov qo'shish</button></div>
+      <h4>Guruhlar va treyninglar</h4>
+      <div class="seg" role="group" aria-label="Guruhlar soni">${[1, 2, 3].map(n => `<button type="button" data-arms="${n}" aria-pressed="${s.arms.length === n}">${["Bir guruhli", "Ikki guruh (RNT)", "Uch guruh"][n - 1]}</button>`).join("")}</div>
+      <label class="field" for="esRand" style="max-width:420px"${s.arms.length > 1 ? "" : " hidden"}>Guruhlarga taqsimlash<select id="esRand"><option value="balanced"${(s.randomization || "balanced") === "balanced" ? " selected" : ""}>Muvozanatlashtirilgan: guruhlar teng to'ladi</option><option value="simple"${s.randomization === "simple" ? " selected" : ""}>Oddiy tasodifiy</option></select></label>
+      <p class="note">Har bir guruhga tayinlangan treyninglar respondentning topshiriqlar ro'yxatida ko'rinadi.${hasData ? " Diqqat: tadqiqotda allaqachon ma'lumot bor, guruhlar va o'lchovlarni o'zgartirish tahlilni buzishi mumkin." : ""}</p>
+      ${arms}
+    </div>
+    <div class="wz-step" data-step="4"${step(4)}>
+      <div id="wzReview"></div>
+      <div class="form-grid">
+        <label class="field" for="esCode">Qo'shilish kodi (4–12 lotin harf yoki raqam)<input id="esCode" class="inp num" value="${esc(s.code)}" maxlength="12"></label>
+        <label class="field" for="esStatus"${exists ? "" : " hidden"}>Holati<select id="esStatus">${[["draft", "Qoralama"], ["active", "Faol: respondentlar qo'shila oladi"], ["closed", "Yakunlangan"]].map(([v, l]) => `<option value="${v}"${s.status === v ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+        <label class="check wide" for="esShow"><input type="checkbox" id="esShow"${s.showResults ? " checked" : ""}><span>Respondentga test natijasi va talqinini ko'rsatish</span></label>
+      </div>
+    </div>
+    <div class="row wz-nav"><span class="note" id="esMsg"></span>
+      <div class="row" id="esActions">
+        ${exists ? `<button type="button" class="btn danger" data-ed-del data-final${step(4)}>O'chirish</button>` : ""}
+        <button type="button" class="btn" id="wzPrev"${wzStep === 1 ? " hidden" : ""}>← Orqaga</button>
+        <button type="button" class="btn primary" id="wzNext"${wzStep === 4 ? " hidden" : ""}>Keyingi →</button>
+        ${exists ? `<button type="button" class="btn primary" data-ed-save data-final${step(4)}>Saqlash</button>`
+          : `<button type="button" class="btn" data-ed-save data-status="draft" data-final${step(4)}>Qoralama sifatida saqlash</button><button type="button" class="btn primary" data-ed-save data-status="active" data-final${step(4)}>Saqlash va e'lon qilish</button>`}
+      </div>
+    </div>`;
   updateEstTime();
+  if (wzStep === 4) renderReview();
 }
 function collectEditor() {
   const s = editing, box = $("#studyEditor");
   s.title = $("#esTitle").value.trim(); s.description = $("#esDesc").value.trim(); s.consent = $("#esConsent").value.trim();
   s.code = $("#esCode").value.trim().toUpperCase(); s.status = $("#esStatus").value; s.showResults = $("#esShow").checked; s.randomization = $("#esRand").value;
+  s.title = s.title.replace(/\s+/g, " ");
   s.instruments = Object.keys(INSTRUMENTS).filter(id => box.querySelector(`[data-inst="${id}"]`)?.checked);
   s.waves.forEach((w, i) => { w.label = box.querySelector(`[data-wave-label="${i}"]`).value.trim() || w.id; w.day = Math.max(0, +box.querySelector(`[data-wave-day="${i}"]`).value || 0); });
   s.arms.forEach((a, i) => { a.name = box.querySelector(`[data-arm-name="${i}"]`).value.trim() || a.id; a.trainings = Object.keys(TRAININGS).filter(id => box.querySelector(`[data-arm-tr="${i}|${id}"]`)?.checked); });
@@ -1803,6 +2007,10 @@ function updateEstTime() {
 $("#studyEditor").addEventListener("change", e => { if (e.target.dataset.inst) updateEstTime(); });
 $("#studyEditor").addEventListener("click", async e => {
   const t = e.target;
+  const tpl = t.closest("[data-tpl]"); if (tpl) { applyTemplate(tpl.dataset.tpl); return; }
+  const wz = t.closest("[data-wz]"); if (wz) { wzGo(+wz.dataset.wz); return; }
+  if (t.closest("#wzNext")) { wzGo(wzStep + 1); return; }
+  if (t.closest("#wzPrev")) { wzGo(wzStep - 1); return; }
   if (t.closest("[data-ed-close]")) { editing = null; renderStudiesView(); return; }
   if (t.closest("[data-wave-add]")) {
     collectEditor();
@@ -1832,6 +2040,8 @@ $("#studyEditor").addEventListener("click", async e => {
   }
   if (t.closest("[data-ed-save]")) {
     collectEditor();
+    const forced = t.closest("[data-ed-save]").dataset.status;
+    if (forced) editing.status = forced;
     const s = editing, msg = m => { $("#esMsg").textContent = m; };
     if (!s.title) return msg("Tadqiqot nomini kiriting.");
     if (!s.instruments.length) return msg("Kamida bitta metodika tanlang.");
@@ -1839,11 +2049,13 @@ $("#studyEditor").addEventListener("click", async e => {
     if (studies.some(x => x.id !== s.id && x.code === s.code)) return msg("Bu kod boshqa tadqiqotda ishlatilgan.");
     s.waves.sort((a, b) => a.day - b.day);
     const doc = { ...structuredClone(s), updatedAt: Date.now() };
+    delete doc.__fresh;
     msg("Saqlanmoqda…");
     try { await db.doc("studies/" + s.id).set(doc); }
     catch (err) { return msg(err?.code === "code_taken" ? "Bu kod boshqa tadqiqotda ishlatilgan." : "Saqlanmadi: " + (err?.code || "xato")); }
     studies = [doc, ...studies.filter(x => x.id !== s.id)]; studyCache[s.id] = doc;
     selStudy = doc; editing = null; demoRows = null;
+    toast(doc.status === "active" ? "Tadqiqot saqlandi va e'lon qilindi" : "Tadqiqot saqlandi");
     renderStudiesView();
   }
 });
@@ -1865,9 +2077,14 @@ function renderStudyDetail() {
         <div><div class="eyebrow">${st.demo ? "Namuna · simulyatsiya qilingan ma'lumotlar" : "Tadqiqot"}</div><h3>${esc(st.title)}</h3>${st.description ? `<p class="note">${esc(st.description)}</p>` : ""}</div>
         <div class="row">${st.demo ? "" : `<button type="button" class="btn" data-st-edit>Tahrirlash</button>`}<button type="button" class="btn" data-st-close>Yopish</button></div>
       </div>
-      <div class="row" style="gap:18px">
-        <div><div class="note">Qo'shilish kodi</div><div class="big" style="font-size:1.6rem">${esc(st.code)}</div></div>
-        ${joinUrl ? `<div style="min-width:0"><div class="note">Taklif havolasi</div><div class="row"><span class="code" id="joinUrl" style="overflow-wrap:anywhere">${esc(joinUrl)}</span><button type="button" class="btn small" data-copy-join>Nusxalash</button></div></div>` : `<p class="note" style="max-width:40ch">Respondentlar platformani ochib, «Tadqiqotlarim» bo'limida shu kodni kiritadi.</p>`}
+      <div class="invite">
+        <div><div class="note">Qo'shilish kodi</div><div class="big" style="font-size:1.8rem;letter-spacing:.06em">${esc(st.code)}</div>${st.status !== "active" && !st.demo ? `<span class="chip warn">e'lon qilinmagan</span>` : ""}</div>
+        ${joinUrl ? `<div class="qr" id="qrBox" title="Taklif havolasi QR-kodi"></div>` : ""}
+        <div class="invite-actions">
+          ${joinUrl ? `<span class="code" id="joinUrl" style="overflow-wrap:anywhere">${esc(joinUrl)}</span>` : `<p class="note">Respondentlar platformani ochib, «Tadqiqotlarim» bo'limida shu kodni kiritadi.</p>`}
+          <div class="row">${joinUrl ? `<button type="button" class="btn small" data-copy-join>Havolani nusxalash</button>` : ""}<button type="button" class="btn small" data-copy-invite>Taklif matnini nusxalash</button><button type="button" class="btn small" data-projector>Ekranda ko'rsatish</button></div>
+          <span class="note">Taklif matnini Telegram yoki elektron pochta orqali yuboring; auditoriyada kod va QR-kodni ekranda ko'rsating.</span>
+        </div>
       </div>
     </div>
     <div class="kpis">
@@ -1890,11 +2107,14 @@ function renderStudyDetail() {
     <div class="panel" id="studyStats"></div>
     <div class="panel" id="studyExport"></div>`;
   renderRespDetail(); renderStudyStats(); renderStudyExport();
+  if (joinUrl) drawQr($("#qrBox"), joinUrl, 114);
 }
 $("#studyDetail").addEventListener("click", e => {
   if (e.target.closest("[data-st-close]")) { selStudy = null; demoRows = null; renderStudiesView(); return; }
-  if (e.target.closest("[data-st-edit]")) { editing = structuredClone(selStudy); renderStudiesView(); $("#studyEditor").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
-  if (e.target.closest("[data-copy-join]")) { copyPre($("#joinUrl"), e.target.closest("[data-copy-join]")); return; }
+  if (e.target.closest("[data-st-edit]")) { editing = structuredClone(selStudy); wzStep = 1; renderStudiesView(); $("#studyEditor").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+  if (e.target.closest("[data-copy-join]")) { copyText(joinUrlFor(selStudy), "Havola nusxalandi"); return; }
+  if (e.target.closest("[data-copy-invite]")) { copyText(inviteText(selStudy), "Taklif matni nusxalandi"); return; }
+  if (e.target.closest("[data-projector]")) { openProjector(selStudy); return; }
   const tr = e.target.closest("[data-resp]");
   if (tr) { selResp = tr.dataset.resp; document.querySelectorAll("#respBody tr").forEach(x => x.classList.toggle("sel", x === tr)); renderRespDetail(); $("#respDetail").scrollIntoView({ behavior: "smooth", block: "nearest" }); return; }
   if (e.target.closest("[data-resp-close]")) { selResp = null; renderRespDetail(); return; }
@@ -2229,6 +2449,7 @@ $("#bankList").addEventListener("click", async e => {
     applyCustomInstruments([...customList().filter(x => x.id !== def.id), def]);
     customEdit = def.id; $("#cbTitle").textContent = `«${def.name}» metodikasini tahrirlash`;
     msg("Saqlandi. Endi bu metodikani tadqiqot konstruktorida tanlashingiz mumkin.");
+    toast("Metodika saqlandi");
     return;
   }
   const ed = t.closest("[data-cb-edit]"); if (ed) { fillCustomForm(INSTRUMENTS[ed.dataset.cbEdit]); $("#bankList").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
@@ -2305,6 +2526,299 @@ function apaParagraphs(st, rows, waveId, S, pairs) {
   return out;
 }
 
+/* ---------- Qobiq: bildirishnomalar, nusxalash, bosh sahifalar ---------- */
+function toast(msg, kind = "ok") {
+  const t = document.createElement("div");
+  t.className = "toast " + kind; t.setAttribute("role", "status"); t.textContent = msg;
+  $("#toasts").appendChild(t);
+  setTimeout(() => t.classList.add("out"), 2600);
+  setTimeout(() => t.remove(), 3000);
+}
+function copyText(text, msg = "Nusxalandi") {
+  const fallback = () => toast("Nusxalab bo'lmadi: matnni belgilab, Ctrl+C bosing.", "err");
+  try { navigator.clipboard.writeText(text).then(() => toast(msg), fallback); } catch { fallback(); }
+}
+function refreshView(v) {
+  if (v === "bosh") renderRespHome();
+  if (v === "boshqaruv") renderResHome();
+}
+const goTo = (v, then) => { show(v); if (then) then(); };
+
+// Respondent bosh sahifasi
+async function pendingTasks() {
+  const out = [];
+  if (!db) return out;
+  for (const [sid, e] of Object.entries(myDoc?.studies || {})) {
+    const st = await loadStudy(sid);
+    if (!st || st.status === "closed") continue;
+    for (const w of st.waves) {
+      if (Date.now() < waveOpenAt(e, w)) continue;
+      for (const id of instrumentsFor(st, w)) if (!(e.responses || []).some(r => r.inst === id && r.wave === w.id)) out.push({ sid, st, w, id });
+    }
+  }
+  return out;
+}
+function nextWaveDate() {
+  let next = null;
+  Object.entries(myDoc?.studies || {}).forEach(([sid, e]) => { const st = studyCache[sid]; if (!st || st.status === "closed") return; st.waves.forEach(w => { const t = waveOpenAt(e, w); if (t > Date.now() && (!next || t < next)) next = t; }); });
+  return next;
+}
+async function renderRespHome() {
+  const h = new Date().getHours();
+  $("#homeGreet").textContent = (h < 11 ? "Xayrli tong" : h < 18 ? "Xayrli kun" : "Xayrli kech") + "!";
+  $("#homeDate").textContent = new Date().toLocaleDateString("uz-UZ", { weekday: "long", day: "numeric", month: "long" });
+  const enrolled = Object.keys(myDoc?.studies || {}).length;
+  const tasks = await pendingTasks();
+  const box = $("#homeTasks");
+  if (tasks.length) {
+    box.innerHTML = `<div class="row" style="justify-content:space-between"><h3>Bugungi vazifalar</h3><span class="chip warn">${tasks.length} ta</span></div>
+      <ul class="tasks">${tasks.slice(0, 4).map(t => `<li class="task"><span>${esc(INSTRUMENTS[t.id].name)} <span class="note">${esc(t.st.title)} · ${esc(t.w.label)}</span></span><button type="button" class="btn small primary" data-home-task="${esc(t.sid)}|${esc(t.w.id)}|${t.id}">To'ldirish</button></li>`).join("")}</ul>
+      ${tasks.length > 4 ? `<button type="button" class="btn small" data-go="tadqiqotlarim">Barcha topshiriqlar</button>` : ""}`;
+  } else if (enrolled) {
+    const nx = nextWaveDate();
+    box.innerHTML = `<h3>Bugungi vazifalar</h3><p>Barcha topshiriqlar bajarilgan. Rahmat!</p><p class="note">${nx ? `Keyingi o'lchov ${fmtDate(nx)} kuni ochiladi.` : "Yangi topshiriqlar paydo bo'lganda shu yerda ko'rinadi."}</p><div><button type="button" class="btn small" data-go="tadqiqotlarim">Tadqiqotlarim</button></div>`;
+  } else {
+    box.innerHTML = `<h3>Tadqiqotga qo'shiling</h3><p class="note">Tadqiqotchidan olgan kodni kiriting. Kod bo'lmasa, testlar va mashqlardan erkin foydalanishingiz mumkin.</p>
+      <form class="row" id="homeJoin" style="align-items:flex-end"><label class="field" for="homeCode" style="width:200px">Tadqiqot kodi<input class="inp num" id="homeCode" maxlength="12" autocomplete="off" placeholder="K7M2QX" style="text-transform:uppercase"></label><button class="btn primary" type="submit">Qo'shilish</button></form>`;
+  }
+  const last = store.get("results", []).find(r => INSTRUMENTS[r.t]);
+  $("#homeLast").innerHTML = last ? (() => { const b = band(last.t, last.score); return `<h3>Oxirgi natija</h3><div class="row" style="justify-content:space-between;align-items:flex-end"><div><div class="note">${esc(INSTRUMENTS[last.t].name)} · ${fmtDate(last.date)}</div><div class="big">${fmtScore(last.t, last.score)}<span class="note" style="font-size:1rem;font-family:var(--f-body)"> / ${INSTRUMENTS[last.t].max}</span></div></div><span class="chip ${b[3]}">${esc(b[2])}</span></div><div><button type="button" class="btn small" data-go="testlar">Testlar tarixi</button></div>`; })()
+    : `<h3>O'zingizni tekshiring</h3><p class="note">Qisqa testlar orqali kayfiyat, xavotir va stress darajangizni bilib oling. Natija faqat sizga ko'rinadi.</p><div><button type="button" class="btn small" data-go="testlar">Testni boshlash</button></div>`;
+  const ids = Object.keys(TRAININGS), today = ids[Math.floor(Date.now() / DAY) % ids.length];
+  const assigned = [...assignedTrainings()];
+  const trId = assigned.length ? assigned[Math.floor(Date.now() / DAY) % assigned.length] : today;
+  const checkin = store.get("checkins", [])[0];
+  $("#homeTiles").innerHTML = [
+    ["i-test", "O'zimni tekshirish", "11 ta shkala: kayfiyat, xavotir, stress, farovonlik", `data-go="testlar"`],
+    ["i-leaf", "Bugungi mashq", `${TRAININGS[trId].title} · ${TRAININGS[trId].minutes} daqiqa`, `data-home-train="${trId}"`],
+    ["i-book", "Kunlik holat", checkin && sameDay(checkin.date, Date.now()) ? `Bugun belgilangan: kayfiyat ${checkin.mood}/10` : "Kayfiyat, stress va uyquni belgilang", `data-go="kundalik"`],
+    ["i-chat", "Suhbatdosh", "Xavotir yoki tushkunlik haqida gaplashing", `data-go="suhbat"`]
+  ].map(([ic, t, s, attr]) => `<button type="button" class="tile" ${attr}><svg class="ic"><use href="#${ic}"/></svg><b>${t}</b><span class="note">${esc(s)}</span></button>`).join("");
+}
+$("#v-bosh").addEventListener("click", e => {
+  const g = e.target.closest("[data-go]"); if (g) { show(g.dataset.go); return; }
+  const tr = e.target.closest("[data-home-train]"); if (tr) { openTraining(tr.dataset.homeTrain); return; }
+  const tk = e.target.closest("[data-home-task]");
+  if (tk) { const [sid, wave, inst] = tk.dataset.homeTask.split("|"); show("tadqiqotlarim"); openTask(sid, wave, inst); }
+});
+$("#v-bosh").addEventListener("submit", e => {
+  if (e.target.id !== "homeJoin") return;
+  e.preventDefault();
+  $("#joinCode").value = $("#homeCode").value; show("tadqiqotlarim"); $("#joinForm").requestSubmit();
+});
+
+// Tadqiqotchi boshqaruv paneli
+async function doLogin(token, note) {
+  note.textContent = "Tekshirilmoqda…";
+  try {
+    const r = await fetch("/api/auth", { method: "POST", headers: { authorization: "Bearer " + token } });
+    if (!r.ok) { note.textContent = "Kalit noto'g'ri. Qayta tekshirib ko'ring."; return; }
+    store.set("psyToken", token); store.set("role", "researcher"); location.reload();
+  } catch { note.textContent = "Server bilan bog'lanib bo'lmadi."; }
+}
+function renderResHome() {
+  const box = $("#resHome");
+  if (!dbSettled) { box.innerHTML = `<p class="note">Ulanmoqda…</p>`; return; }
+  if (!isPsy) {
+    box.innerHTML = backend === "cf" ? `<form class="panel" id="homeLogin">
+        <h3>Tadqiqotchi sifatida kirish</h3>
+        <p class="note">Platforma egasi bergan tadqiqotchi kalitini kiriting. Kalit shu qurilmada eslab qolinadi.</p>
+        <div class="row" style="align-items:flex-end"><label class="field" for="homeToken" style="width:min(100%, 320px)">Tadqiqotchi kaliti<input class="inp" id="homeToken" type="password" autocomplete="current-password"></label><button class="btn primary" type="submit">Kirish</button></div>
+        <p class="note" id="homeLoginNote"></p></form>`
+      : `<div class="panel"><h3>Tadqiqotchi rejimi server talab qiladi</h3><p class="note">${backend === "claude" ? "Tadqiqot yaratish uchun artifaktga Editor huquqi kerak." : "Platforma hozir server ulanmagan holda ochilgan. Cloudflare'ga joylangach, tadqiqotchi kaliti bilan kirasiz."}</p></div>`;
+    box.innerHTML += `<div class="panel"><h3>Imkoniyatlarni namunada ko'ring</h3><p class="note">80 respondentlik simulyatsiya qilingan tadqiqotda statistika, savollar tahlili, APA matni va eksportni sinab ko'ring.</p><div><button type="button" class="btn" data-res-demo>Namuna tadqiqotni ochish</button></div></div>`;
+    return;
+  }
+  const inStudy = allParticipants.filter(p => Object.keys(p.studies || {}).length);
+  const weekAgo = Date.now() - 7 * DAY;
+  const weekResponses = inStudy.reduce((n, p) => n + Object.values(p.studies).reduce((m, e) => m + (e.responses || []).filter(r => r.date > weekAgo).length, 0), 0);
+  const risks = inStudy.flatMap(p => Object.entries(p.studies).filter(([, e]) => (e.responses || []).some(r => r.sos && r.date > (p.reviewedAt || 0))).map(([sid]) => ({ p, st: studies.find(s => s.id === sid) }))).filter(x => x.st);
+  const active = studies.filter(s => s.status === "active");
+  const countIn = st => allParticipants.filter(p => p.studies?.[st.id]).length;
+  const steps = [
+    ["Metodikalarni ko'rib chiqing", "Bankda 11 ta shkala, demografik anketa va 12 ta treyning bor. O'z metodikangizni ham qo'shishingiz mumkin.", studies.length > 0 || customIds.size > 0, `data-go="bank"`, "Bankni ochish"],
+    ["Tadqiqot yarating", "Tayyor shablondan boshlang: metodikalar, o'lchovlar va guruhlar avtomatik to'ldiriladi.", studies.length > 0, `data-res-new`, "Yangi tadqiqot"],
+    ["Respondentlarni taklif qiling", "Kod, havola yoki QR-kodni yuboring yoki auditoriyada ekranda ko'rsating.", active.length > 0 && inStudy.length > 0, active[0] ? `data-res-open="${active[0].id}"` : `data-go="tadqiqotlar"`, "Taklif qilish"],
+    ["Natijalarni tahlil qiling", "Statistika, savollar tahlili, APA matni va SPSS uchun CSV eksport.", inStudy.length >= 5, studies[0] ? `data-res-open="${[...studies].sort((a, b) => countIn(b) - countIn(a))[0].id}"` : `data-res-demo`, studies.length ? "Tahlilni ochish" : "Namunada ko'rish"]
+  ];
+  box.innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><span class="label">Faol tadqiqotlar</span><span class="v">${active.length}</span><span class="s">jami ${studies.length} ta</span></div>
+      <div class="kpi"><span class="label">Respondentlar</span><span class="v">${inStudy.length}</span><span class="s">barcha tadqiqotlarda</span></div>
+      <div class="kpi"><span class="label">So'nggi 7 kunda javoblar</span><span class="v">${weekResponses}</span><span class="s">to'ldirilgan metodikalar</span></div>
+      <div class="kpi"><span class="label">Ochiq xavf signallari</span><span class="v">${risks.length}</span><span class="s">ko'rib chiqilmagan</span></div>
+    </div>
+    <div class="panel"><h3>Ishni boshlash</h3><ol class="guide">${steps.map(([t, d, done, attr, btn], i) => `<li class="${done ? "done" : ""}"><span class="nb">${done ? "✓" : i + 1}</span><b>${t}</b><span class="note">${d}</span><div><button type="button" class="btn small${done ? "" : " primary"}" ${attr}>${btn}</button></div></li>`).join("")}</ol></div>
+    ${risks.length ? `<div class="panel"><div class="row" style="justify-content:space-between"><h3>E'tibor talab qiladi</h3><span class="chip crit">${risks.length}</span></div><ul class="tasks">${risks.slice(0, 5).map(x => `<li class="task"><span><b class="num">${esc(x.p.code || "—")}</b> <span class="note">${esc(x.st.title)} · PHQ-9 ning 9-savoli</span></span><button type="button" class="btn small" data-res-open="${x.st.id}">Ko'rish</button></li>`).join("")}</ul></div>` : ""}
+    <div class="panel"><div class="row" style="justify-content:space-between"><h3>Tadqiqotlarim</h3><button type="button" class="btn small primary" data-res-new>Yangi tadqiqot</button></div>
+      ${studies.length ? `<div class="study-cards">${studies.map(st => {
+        const n = countIn(st), w0 = st.waves[0], rows = allParticipants.filter(p => p.studies?.[st.id]);
+        const full = w0 ? rows.filter(p => instrumentsFor(st, w0).every(id => p.studies[st.id].responses?.some(r => r.inst === id && r.wave === w0.id))).length : 0;
+        const pct = n ? Math.round(full / n * 100) : 0;
+        const chip = { draft: ["neutral", "qoralama"], active: ["ok", "faol"], closed: ["warn", "yakunlangan"] }[st.status] || ["neutral", st.status];
+        return `<button type="button" class="study-card" data-res-open="${st.id}"><span class="row" style="justify-content:space-between"><span class="chip ${chip[0]}">${chip[1]}</span><span class="note num">${esc(st.code)}</span></span><b>${esc(st.title)}</b><span class="note">${n} respondent · ${st.instruments.length} metodika · ${st.waves.length} o'lchov</span><span class="progress" aria-label="${esc(w0?.id || "T0")} bajarilishi ${pct}%"><i style="width:${pct}%"></i></span><span class="note">${esc(w0?.id || "T0")} to'liq bajargan: ${pct}%</span></button>`;
+      }).join("")}</div>` : `<p class="note">Hali tadqiqot yo'q. «Yangi tadqiqot» tugmasini bosing va tayyor shablonni tanlang.</p>`}
+    </div>`;
+}
+function openStudy(id) {
+  show("tadqiqotlar");
+  selStudy = studies.find(s => s.id === id) || null; demoRows = null; selResp = null; statWave = null; editing = null;
+  renderStudiesView();
+  $("#studyDetail").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+$("#v-boshqaruv").addEventListener("click", e => {
+  const g = e.target.closest("[data-go]"); if (g) { show(g.dataset.go); return; }
+  if (e.target.closest("[data-res-new]")) { show("tadqiqotlar"); startNewStudy(); return; }
+  if (e.target.closest("[data-res-demo]")) { show("tadqiqotlar"); openDemo(); return; }
+  const o = e.target.closest("[data-res-open]"); if (o) openStudy(o.dataset.resOpen);
+});
+$("#v-boshqaruv").addEventListener("submit", e => {
+  if (e.target.id !== "homeLogin") return;
+  e.preventDefault();
+  const tok = $("#homeToken").value.trim(); if (tok) doLogin(tok, $("#homeLoginNote"));
+});
+
+/* ---------- Tadqiqot ustasi: shablonlar ---------- */
+const STUDY_TEMPLATES = [
+  { id: "screen", title: "Ruhiy holat skriningi", desc: "Depressiya, xavotir va stress darajasini bir martalik o'lchash.", instruments: ["demo", "phq", "gad", "pss"], waves: [["T0", "T0 · asosiy", 0]], arms: 1, trainings: [] },
+  { id: "wellbeing", title: "Farovonlik va bardoshlilik", desc: "Hayotdan qoniqish, bardoshlilik, o'z-o'zini samarali deb bilish va ijtimoiy qo'llab-quvvatlash.", instruments: ["demo", "who5", "swls", "brs", "gse", "mspss"], waves: [["T0", "T0 · asosiy", 0]], arms: 1, trainings: [] },
+  { id: "rct", title: "Intervensiya samaradorligi (RNT)", desc: "Eksperimental va nazorat guruhlari, uch o'lchov: 0, 4 va 8-hafta. Eksperimental guruhga treyninglar tayinlanadi.", instruments: ["demo", "phq", "gad", "pss", "who5", "trust"], waves: [["T0", "T0 · boshlang'ich", 0], ["T1", "T1 · oraliq", 28], ["T2", "T2 · yakuniy", 56]], arms: 2, trainings: ["breath478", "thought", "activation", "gratitude"] },
+  { id: "validation", title: "Metodikani validatsiya qilish", desc: "Yangi yoki tarjima qilingan shkalani mezon metodikalar bilan o'lchash va 14 kundan keyin qayta test (test-retest).", instruments: ["demo", "phq", "gad", "who5"], waves: [["T0", "T0 · birinchi o'lchov", 0], ["T1", "T1 · qayta test", 14]], arms: 1, trainings: [], addCustom: true },
+  { id: "blank", title: "Bo'sh tadqiqot", desc: "Metodikalar, o'lchovlar va guruhlarni o'zim tanlayman.", instruments: [], waves: [["T0", "T0 · asosiy", 0]], arms: 1, trainings: [] }
+];
+let wzStep = 1;
+function startNewStudy() {
+  editing = newStudy(); editing.__fresh = true; wzStep = 0; selStudy = null; demoRows = null;
+  renderStudiesView();
+  $("#studyEditor").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function applyTemplate(tid) {
+  const t = STUDY_TEMPLATES.find(x => x.id === tid), s = editing;
+  s.instruments = [...t.instruments, ...(t.addCustom ? [...customIds] : [])];
+  s.waves = t.waves.map(([id, label, day]) => ({ id, label, day }));
+  s.arms = t.arms === 2 ? [{ id: "E", name: "Eksperimental guruh", trainings: [...t.trainings] }, { id: "N", name: "Nazorat guruhi", trainings: [] }] : [{ id: "A", name: "Asosiy guruh", trainings: [...t.trainings] }];
+  if (tid !== "blank") { s.title = t.title; s.description = t.desc; }
+  delete s.__fresh; wzStep = 1;
+  renderEditor();
+}
+function templatesHtml() {
+  return `<div class="row" style="justify-content:space-between"><h3>Yangi tadqiqot: shablonni tanlang</h3><button type="button" class="btn" data-ed-close>Yopish</button></div>
+    <p class="note">Shablon metodikalar, o'lchovlar va guruhlarni oldindan to'ldiradi. Keyingi qadamlarda hammasini o'zgartirishingiz mumkin.</p>
+    <div class="tpl-grid">${STUDY_TEMPLATES.map(t => `<button type="button" class="tpl" data-tpl="${t.id}"><b>${esc(t.title)}</b><span class="note">${esc(t.desc)}</span><span class="note num">${t.instruments.length ? t.instruments.map(id => INSTRUMENTS[id]?.name).filter(Boolean).join(", ") : "—"}${t.waves.length > 1 ? ` · ${t.waves.length} o'lchov` : ""}${t.arms > 1 ? " · 2 guruh" : ""}</span></button>`).join("")}</div>`;
+}
+const WZ_STEPS = ["Asosiy ma'lumot", "Metodikalar", "O'lchovlar va guruhlar", "Tekshirish va e'lon"];
+function wzGo(n) {
+  collectEditor();
+  if (n > wzStep) {
+    if (wzStep === 1 && !editing.title) { $("#esMsg").textContent = "Tadqiqot nomini kiriting."; $("#esTitle").focus(); return; }
+    if (wzStep === 2 && !editing.instruments.length) { $("#esMsg").textContent = "Kamida bitta metodika tanlang."; return; }
+  }
+  wzStep = Math.max(1, Math.min(4, n));
+  $("#esMsg").textContent = "";
+  document.querySelectorAll("#studyEditor .wz-step").forEach(el => { el.hidden = +el.dataset.step !== wzStep; });
+  document.querySelectorAll("#studyEditor .wz-steps button").forEach(b => { if (+b.dataset.wz === wzStep) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current"); });
+  $("#wzPrev").hidden = wzStep === 1; $("#wzNext").hidden = wzStep === 4;
+  document.querySelectorAll("#studyEditor [data-final]").forEach(el => { el.hidden = wzStep !== 4; });
+  if (wzStep === 4) renderReview();
+  $("#studyEditor").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function renderReview() {
+  const s = editing, mins = s.instruments.reduce((m, id) => m + (INSTRUMENTS[id]?.minutes || 0), 0);
+  $("#wzReview").innerHTML = `<dl class="review">
+    <dt>Nomi</dt><dd>${esc(s.title || "—")}</dd>
+    <dt>Metodikalar</dt><dd>${s.instruments.map(id => esc(INSTRUMENTS[id]?.name || id)).join(", ") || "—"} <span class="note">(bir o'lchov ≈ ${mins} daqiqa)</span></dd>
+    <dt>O'lchovlar</dt><dd>${s.waves.map(w => `${esc(w.label)} <span class="note">(${w.day}-kun)</span>`).join(" → ")}</dd>
+    <dt>Guruhlar</dt><dd>${s.arms.map(a => `${esc(a.name)}${a.trainings.length ? ` <span class="note">(${a.trainings.length} treyning)</span>` : ""}`).join("; ")}${s.arms.length > 1 ? ` · ${s.randomization === "simple" ? "oddiy tasodifiy" : "muvozanatlashtirilgan"} taqsimlash` : ""}</dd>
+  </dl>`;
+}
+
+/* ---------- Taklif: QR-kod, taklif matni, ekranda ko'rsatish ---------- */
+let qrLib = null;
+// QR-kod generatori platformaning o'zida (public/js/qrcode.js, MIT, Kazuhiko Arase): tashqi CDN kerak emas
+const loadQr = () => (qrLib ??= new Promise((res, rej) => {
+  if (window.qrcode) return res(window.qrcode);
+  const s = document.createElement("script");
+  s.src = "js/qrcode.js";
+  s.onload = () => res(window.qrcode); s.onerror = () => { qrLib = null; rej(); };
+  document.head.appendChild(s);
+}));
+function drawQr(el, text, size) {
+  if (!el) return;
+  loadQr().then(q => {
+    const qr = q(0, "M"); qr.addData(text); qr.make();
+    el.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true, alt: "Taklif havolasi QR-kodi" });
+    const svg = el.querySelector("svg"); if (svg) { svg.setAttribute("width", size); svg.setAttribute("height", size); }
+  }).catch(() => { el.hidden = true; });
+}
+const joinUrlFor = st => backend === "cf" ? `${location.origin}/#join-${st.code}` : "";
+function inviteText(st) {
+  const mins = instrumentsFor(st, st.waves[0]).reduce((m, id) => m + (INSTRUMENTS[id]?.minutes || 0), 0), url = joinUrlFor(st);
+  return `Assalomu alaykum!\nSizni «${st.title}» ilmiy tadqiqotida ishtirok etishga taklif qilamiz.${st.description ? " " + st.description : ""}\nIshtirok ixtiyoriy va anonim, bir o'lchov taxminan ${mins} daqiqa vaqt oladi.\n${url ? `Qo'shilish havolasi: ${url}` : "RuhAI platformasini oching va «Tadqiqotlarim» bo'limida kodni kiriting."}\nTadqiqot kodi: ${st.code}`;
+}
+function openProjector(st) {
+  const p = $("#projector"), url = joinUrlFor(st);
+  p.hidden = false;
+  p.querySelector(".proj-title").textContent = st.title;
+  p.querySelector(".proj-code").textContent = st.code;
+  p.querySelector(".proj-url").textContent = url || "Platformani oching → «Tadqiqotlarim» → kodni kiriting";
+  const q = $("#projQr"); q.hidden = !url;
+  if (url) drawQr(q, url, Math.min(320, Math.round(window.innerHeight * 0.36)));
+  try { p.requestFullscreen?.().catch(() => {}); } catch {}
+}
+function closeProjector() { $("#projector").hidden = true; try { if (document.fullscreenElement) document.exitFullscreen(); } catch {} }
+$("#projector").addEventListener("click", e => { if (e.target.closest("[data-proj-close]")) closeProjector(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#projector").hidden) closeProjector(); });
+
+/* ---------- Savollarni bittadan ko'rsatish (stepper) ---------- */
+function stepperize(form) {
+  form.querySelector(".step-bar")?.remove();
+  const qs = [...form.querySelectorAll("fieldset.q")];
+  form._qs = qs;
+  if (qs.length < 2) { form.classList.remove("stepper"); return; }
+  const list = store.get("listMode", false);
+  form.classList.toggle("stepper", !list);
+  const bar = document.createElement("div");
+  bar.className = "step-bar";
+  bar.innerHTML = `<div class="step-track" aria-hidden="true"><i></i></div><div class="row step-nav"><button type="button" class="btn small" data-step-prev>← Orqaga</button><span class="note num" data-step-pos aria-live="polite"></span><button type="button" class="btn small" data-step-next>Keyingi →</button><button type="button" class="btn small ghost" data-step-mode>${list ? "Bittadan ko'rsatish" : "Hammasini ko'rsatish"}</button></div>`;
+  form.prepend(bar);
+  const first = qs.findIndex(q => !q.querySelector("input:checked"));
+  stepGo(form, first < 0 ? 0 : first);
+  if (form._stepperInit) return;
+  form._stepperInit = true;
+  form.addEventListener("change", e => {
+    const q = e.target.closest("fieldset.q"); if (!q || !form._qs) return;
+    const k = form._qs.indexOf(q);
+    stepUpdate(form);
+    if (form.classList.contains("stepper") && k === form._i && k < form._qs.length - 1) setTimeout(() => stepGo(form, k + 1), 220);
+  });
+  form.addEventListener("click", e => {
+    if (e.target.closest("[data-step-prev]")) stepGo(form, form._i - 1);
+    else if (e.target.closest("[data-step-next]")) stepGo(form, form._i + 1);
+    else if (e.target.closest("[data-step-mode]")) {
+      const listNow = !form.classList.toggle("stepper");
+      store.set("listMode", listNow);
+      e.target.closest("[data-step-mode]").textContent = listNow ? "Bittadan ko'rsatish" : "Hammasini ko'rsatish";
+      stepUpdate(form);
+    }
+  });
+}
+function stepGo(form, n) {
+  const qs = form._qs;
+  form._i = Math.max(0, Math.min(qs.length - 1, n));
+  qs.forEach((q, k) => q.classList.toggle("cur", k === form._i));
+  stepUpdate(form);
+}
+function stepUpdate(form) {
+  const qs = form._qs, bar = form.querySelector(".step-bar"); if (!bar) return;
+  const done = qs.filter(q => q.querySelector("input:checked")).length, stepper = form.classList.contains("stepper");
+  bar.querySelector(".step-track i").style.width = (done / qs.length * 100) + "%";
+  bar.querySelector("[data-step-pos]").textContent = stepper ? `${form._i + 1}-savol / ${qs.length}` : `${done} / ${qs.length} javob`;
+  const prev = bar.querySelector("[data-step-prev]"), next = bar.querySelector("[data-step-next]");
+  prev.hidden = next.hidden = !stepper;
+  prev.disabled = form._i === 0;
+  next.disabled = form._i === qs.length - 1 || !qs[form._i].querySelector("input:checked");
+}
+
 function onBackendReady() {
   dbSettled = true;
   $("#bankTabC").hidden = !(isPsy && db);
@@ -2330,6 +2844,7 @@ function onBackendReady() {
   renderMyStudies().then(renderTrainingList);
   renderStudiesView();
   if (joinMatch && db) { $("#joinCode").value = joinMatch[1].toUpperCase(); $("#joinForm").requestSubmit(); }
+  refreshView(currentView);
 }
 renderTrainingList(); renderTHistory(); renderBank(); renderMyStudies(); renderStudiesView();
 
@@ -2340,10 +2855,12 @@ $("#psyLogin").addEventListener("submit", async e => {
   try {
     const r = await fetch("/api/auth", { method: "POST", headers: { authorization: "Bearer " + tok } });
     if (!r.ok) { $("#psyLoginNote").textContent = "Kalit noto'g'ri."; return; }
-    store.set("psyToken", tok); location.reload();
+    store.set("psyToken", tok); store.set("role", "researcher"); location.reload();
   } catch { $("#psyLoginNote").textContent = "Server bilan bog'lanib bo'lmadi."; }
 });
 $("#psyLogoutBtn").onclick = () => { try { localStorage.removeItem("ruhai.psyToken"); } catch {} location.reload(); };
+appReady = true;
+refreshView(currentView);
 syncConsentUI();
 initDb();
 })();
