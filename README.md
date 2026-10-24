@@ -80,6 +80,15 @@ AI-suhbatdosh, kundalik tahlili va psixolog uchun AI xulosa quyidagi provayderla
 
 Bepul limit tugasa, platforma AI so'rovlariga «Bugungi limit tugadi» deb javob beradi; testlar, treyninglar va tadqiqotlar AI'siz ham to'liq ishlaydi.
 
+### Ovozli suhbatdosh (Gemini)
+«Suhbatdosh» bo'limida «Ovozli suhbat» rejimi `GEMINI_API_KEY` maxfiy kaliti qo'shilganda avtomatik paydo bo'ladi (matnli suhbat uchun tanlangan provayderdan qat'i nazar). Ishlash tartibi:
+1. Respondent mikrofon tugmasini bosib gapiradi (bir yozuv 60 soniyagacha). Yozuv brauzerda 16 kHz WAV formatiga aylantiriladi.
+2. Server (`/api/voice`) audioni Gemini'ga yuboradi: Gemini nutqni o'zbekcha matnga aylantiradi va KXT asosida qisqa javob tayyorlaydi.
+3. Javob ekranda ko'rinadi va Gemini ovozida o'qiladi (`/api/tts`). Gemini ovozi ishlamasa, brauzerning o'z ovozi ishlatiladi.
+4. Matnga aylantirilgan gapda xavf belgilari bo'lsa, yordam raqamlari ko'rsatiladi va (rozilik bo'lsa) psixologga signal yuboriladi.
+
+Birinchi ishlatishdan oldin respondentga ovoz Google'ga yuborilishi haqida ogohlantirish ko'rsatiladi. Audio platformada saqlanmaydi. Ovoz modeli va ovoz nomi `wrangler.toml` dagi `GEMINI_TTS_MODEL` va `GEMINI_TTS_VOICE` qatorlarida o'zgartiriladi.
+
 **Maxfiylik bo'yicha muhim eslatma.** Google'ning bepul tarif shartlariga ko'ra, bepul Gemini API'ga yuborilgan ma'lumotlar Google mahsulotlarini yaxshilash uchun ishlatilishi mumkin. Respondentlarning kundalik yozuvlari va suhbatlari sezgir psixologik ma'lumot bo'lgani uchun, haqiqiy tadqiqotda Workers AI yoki pullik tarifni tanlang yoki rozilik matnida buni respondentlarga aniq ayting.
 
 ### Sozlamalar
@@ -89,7 +98,10 @@ Bepul limit tugasa, platforma AI so'rovlariga «Bugungi limit tugadi» deb javob
 | `WORKERS_AI_MODEL` | Workers AI modeli | `@cf/google/gemma-3-12b-it` |
 | `GEMINI_MODEL` | Gemini modeli | `gemini-2.5-flash` |
 | `ANTHROPIC_MODEL` | Claude modeli | `claude-opus-5-5` |
-| `AI_DAILY_LIMIT` | Bitta IP manzildan kunlik AI so'rovlari soni (bepul kvotani tejash) | `50` |
+| `GEMINI_TTS_MODEL` | Javoblarni o'qiydigan Gemini ovoz modeli | `gemini-2.5-flash-preview-tts` |
+| `GEMINI_TTS_VOICE` | Gemini ovozi nomi | `Kore` |
+| `AI_DAILY_LIMIT` | Har bir respondentning kunlik AI so'rovlari soni (ovozli navbat 2 ta so'rov hisoblanadi) | `60` |
+| `AI_DAILY_LIMIT_IP` | Bitta IP manzildan kunlik AI so'rovlari (auditoriya bitta IP orqali chiqishi mumkin) | `1500` |
 
 Bu qiymatlar `wrangler.toml` da saqlanadi va har bir deploy'da qo'llanadi; ularni panelda emas, shu faylda o'zgartiring. Maxfiy kalitlar (`PSY_TOKEN`, `GEMINI_API_KEY`) esa panelda saqlanadi va deploy'da o'chmaydi.
 
@@ -130,6 +142,8 @@ Birinchi kirishda platforma «Respondent» yoki «Tadqiqotchi» rolini tanlashni
 | `GET /api/panel`, `GET/PATCH /api/panel/:id` | tadqiqotchi | Respondentlar ma'lumotlari, xavf signalini ko'rib chiqish |
 | `POST /api/auth` | tadqiqotchi | Kalitni tekshirish |
 | `POST /api/ai` | respondent | AI so'rovi (tanlangan provayder orqali) |
+| `POST /api/voice` | respondent | Ovozli navbat: audio → matn va javob (Gemini) |
+| `POST /api/tts` | respondent | Javob matnini Gemini ovozida o'qish |
 
 Tadqiqotchi so'rovlari `Authorization: Bearer <PSY_TOKEN>` sarlavhasini talab qiladi.
 

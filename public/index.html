@@ -339,6 +339,16 @@ body[data-role=""] #nav, body[data-role=""] #roleSeg { display: none; }
 .toast { background: var(--ink); color: var(--bg); padding: 10px 14px; border-radius: 10px; font-size: 0.88rem; box-shadow: 0 6px 20px rgb(0 0 0 / 0.18); transition: opacity 0.3s, transform 0.3s; max-width: 360px; }
 .toast.out { opacity: 0; transform: translateY(6px); }
 .toast.err { background: var(--crit); color: var(--surface); }
+.voice { display: flex; flex-direction: column; align-items: center; gap: 12px; padding-block: 10px; text-align: center; }
+.voice-main { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.voice-consent { max-width: 62ch; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.mic { position: relative; width: 88px; height: 88px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; display: grid; place-items: center; }
+.mic .ic { width: 34px; height: 34px; position: relative; z-index: 1; }
+.mic-ring { position: absolute; inset: 0; border-radius: 50%; background: var(--accent); opacity: 0.25; transition: transform 0.08s linear; }
+.mic.rec, .mic.rec .mic-ring { background: var(--crit); }
+.mic.busy { opacity: 0.55; cursor: progress; }
+.voice-state { font-weight: 500; min-height: 1.5em; max-width: 52ch; }
+.chat.short { height: min(36vh, 340px); }
 @media (max-width: 860px) {
   .tiles, .guide { grid-template-columns: repeat(2, 1fr); }
   .home-grid { grid-template-columns: 1fr; }
@@ -391,6 +401,8 @@ body[data-role=""] #nav, body[data-role=""] #roleSeg { display: none; }
     <symbol id="i-lib" viewBox="0 0 24 24"><path d="M5 4v16M9.5 4v16"/><path d="M14 5l4.5 15"/></symbol>
     <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
     <symbol id="i-sigma" viewBox="0 0 24 24"><path d="M17 5H7l6 7-6 7h10"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></symbol>
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/></symbol>
   </svg>
   <aside class="side">
@@ -600,9 +612,10 @@ body[data-role=""] #nav, body[data-role=""] #roleSeg { display: none; }
       <div class="head">
         <div class="eyebrow">3-modul · AI-suhbatdosh</div>
         <h2>Qo'llab-quvvatlovchi suhbat</h2>
-        <p class="lead">Kognitiv-xulqiy terapiya tamoyillariga asoslangan o'zbek tilidagi suhbatdosh. Xavf belgilari aniqlansa, suhbat to'xtatilmasdan yordam manbalari ko'rsatiladi.</p>
+        <p class="lead">Kognitiv-xulqiy terapiya tamoyillariga asoslangan o'zbek tilidagi suhbatdosh. Yozib yoki ovoz bilan gaplashishingiz mumkin. Xavf belgilari aniqlansa, yordam manbalari ko'rsatiladi.</p>
       </div>
       <div class="panel">
+        <div class="seg" id="chatMode" role="group" aria-label="Suhbat turi" hidden><button type="button" data-mode="text" aria-pressed="true">Matnli suhbat</button><button type="button" data-mode="voice" aria-pressed="false">Ovozli suhbat</button></div>
         <div class="chat" id="chat" aria-live="polite"></div>
         <div class="quick" id="quick">
           <button>Imtihon oldidan xavotirdaman</button>
@@ -615,6 +628,18 @@ body[data-role=""] #nav, body[data-role=""] #roleSeg { display: none; }
           <button class="btn primary" id="send">Yuborish</button>
           <button type="button" class="btn" id="stop" hidden>To'xtatish</button>
         </form>
+        <div class="voice" id="voicePanel" hidden>
+          <div class="voice-consent" id="voiceConsent" hidden>
+            <p>Ovozli suhbatda gapingiz Google Gemini xizmatiga yuboriladi, matnga aylantiriladi va unga javob tayyorlanadi. Audio yozuv platformada saqlanmaydi. Bepul tarifda Google yuborilgan ma'lumotlardan xizmatni yaxshilash uchun foydalanishi mumkin, shuning uchun ismingiz, manzilingiz kabi shaxsiy ma'lumotlarni aytmang.</p>
+            <button type="button" class="btn primary" id="voiceAgree">Tushundim, davom etish</button>
+          </div>
+          <div class="voice-main" id="voiceMain" hidden>
+            <button type="button" class="mic" id="micBtn" aria-label="Gapirishni boshlash"><span class="mic-ring" id="micRing"></span><svg class="ic"><use href="#i-mic"/></svg></button>
+            <p class="voice-state" id="voiceState" aria-live="polite">Gapirish uchun tugmani bosing</p>
+            <label class="check" for="voiceSpeak"><input type="checkbox" id="voiceSpeak" checked><span>Javoblarni ovoz bilan o'qish</span></label>
+            <p class="note">Tugmani bosing, gapiring, tugatgach yana bosing. Bir yozuv 60 soniyagacha.</p>
+          </div>
+        </div>
         <p class="note" id="chatNote">Suhbat sizning Claude hisobingiz orqali ishlaydi; birinchi xabarda ruxsat so'raladi. Suhbat hech qayerda saqlanmaydi.</p>
       </div>
       <div class="panel">
@@ -1005,7 +1030,10 @@ const errText = code => ({
   daily_limit: "Bugungi AI so'rovlari limiti tugadi. Ertaga qayta urinib ko'ring.",
   refused: "AI bu so'rovga javob bera olmadi.",
   ai_not_configured: "AI serverda sozlanmagan.",
-  bad_json: "AI javobini o'qib bo'lmadi. Qayta urinib ko'ring."
+  bad_json: "AI javobini o'qib bo'lmadi. Qayta urinib ko'ring.",
+  voice_not_configured: "Ovozli suhbat serverda sozlanmagan (GEMINI_API_KEY kerak).",
+  bad_audio: "Yozuvni o'qib bo'lmadi. Qayta gapirib ko'ring.",
+  model_not_found: "Gemini modeli topilmadi. Platforma sozlamalarini tekshirish kerak."
 }[code] || "AI bilan bog'lanib bo'lmadi. Keyinroq qayta urinib ko'ring.");
 
 /* ---------- Xavf belgilari (lokal) ---------- */
@@ -1148,13 +1176,15 @@ function addMsg(cls, text) {
   $("#chat").appendChild(d); $("#chat").scrollTop = $("#chat").scrollHeight; return d;
 }
 addMsg("bot", GREETING);
+function flagRisk() {
+  addMsg("sys", "Gapingizda xavf belgilari aniqlandi. Agar hozir o'zingizga zarar yetkazish xavfi bo'lsa, darhol 103 yoki 112 raqamiga qo'ng'iroq qiling yoki yoningizdagi ishonchli insonga ayting. Agar rozilik bergan bo'lsangiz, psixologga anonim signal yuboriladi (suhbat matnisiz).");
+  shareMine(d => { d.riskEvents.push({ date: Date.now(), source: "suhbat" }); d.riskEvents = d.riskEvents.slice(-30); });
+}
+function countChatSession() { if (!chatCounted) { chatCounted = true; shareMine(d => { d.chatSessions = (d.chatSessions || 0) + 1; }); } }
 async function send(text) {
   text = text.trim(); if (!text || ctl) return;
   addMsg("me", text); $("#msg").value = "";
-  if (hasRisk(text)) {
-    addMsg("sys", "Xabaringizda xavf belgilari aniqlandi. Agar hozir o'zingizga zarar yetkazish xavfi bo'lsa, darhol 103 yoki 112 raqamiga qo'ng'iroq qiling yoki yoningizdagi ishonchli insonga ayting. Agar rozilik bergan bo'lsangiz, psixologga anonim signal yuboriladi (suhbat matnisiz).");
-    shareMine(d => { d.riskEvents.push({ date: Date.now(), source: "suhbat" }); d.riskEvents = d.riskEvents.slice(-30); });
-  }
+  if (hasRisk(text)) flagRisk();
   const sample = await getSample();
   if (!sample) { addMsg("bot", "AI suhbatdosh hozir mavjud emas: server sozlanmagan yoki platforma oflayn rejimda ochilgan."); return; }
   turns.push({ role: "user", content: text });
@@ -1165,7 +1195,7 @@ async function send(text) {
     const { text: ans } = await sample(input, { cache: false, signal: ctl.signal, modelTier: "quick",
       onText: ({ text }) => { bubble.textContent = text; $("#chat").scrollTop = $("#chat").scrollHeight; } });
     bubble.textContent = ans; turns.push({ role: "assistant", content: ans });
-    if (!chatCounted) { chatCounted = true; shareMine(d => { d.chatSessions = (d.chatSessions || 0) + 1; }); }
+    countChatSession();
   } catch (e) {
     turns.pop();
     bubble.textContent = e.text || errText(e.code);
@@ -1176,6 +1206,146 @@ $("#composer").addEventListener("submit", e => { e.preventDefault(); send($("#ms
 $("#msg").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send($("#msg").value); } });
 $("#stop").onclick = () => ctl?.abort();
 $("#quick").addEventListener("click", e => { if (e.target.tagName === "BUTTON") send(e.target.textContent); });
+
+/* ---------- Ovozli suhbatdosh (Gemini) ---------- */
+let voiceOn = false, rec = null, recChunks = [], recStream = null, recTimer = null, recStart = 0, meterRaf = null, meterAc = null, voiceBusy = false, playing = null;
+function setVoiceState(text, mode = "") {
+  $("#voiceState").textContent = text;
+  const m = $("#micBtn");
+  m.classList.toggle("rec", mode === "rec"); m.classList.toggle("busy", mode === "busy");
+  m.querySelector("use").setAttribute("href", mode === "rec" ? "#i-stop" : "#i-mic");
+  m.setAttribute("aria-label", mode === "rec" ? "Yozishni tugatish" : "Gapirishni boshlash");
+}
+function enableVoiceUI(available) { $("#chatMode").hidden = !available; }
+$("#chatMode").addEventListener("click", e => {
+  const b = e.target.closest("[data-mode]"); if (!b) return;
+  voiceOn = b.dataset.mode === "voice";
+  document.querySelectorAll("#chatMode button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  $("#voicePanel").hidden = !voiceOn; $("#composer").hidden = voiceOn; $("#quick").hidden = voiceOn;
+  $("#chat").classList.toggle("short", voiceOn);
+  const agreed = store.get("voiceConsent", false);
+  $("#voiceConsent").hidden = agreed; $("#voiceMain").hidden = !agreed;
+  if (!voiceOn) { stopRecording(); stopPlayback(); }
+});
+$("#voiceAgree").onclick = () => { store.set("voiceConsent", true); $("#voiceConsent").hidden = true; $("#voiceMain").hidden = false; };
+$("#micBtn").onclick = () => { if (voiceBusy) return; if (rec) stopRecording(); else startRecording(); };
+
+async function startRecording() {
+  stopPlayback();
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { setVoiceState("Brauzeringiz ovoz yozishni qo'llab-quvvatlamaydi. Matnli suhbatdan foydalaning."); return; }
+  try { recStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+  catch { setVoiceState("Mikrofonga ruxsat berilmadi. Brauzer sozlamalarida bu sayt uchun mikrofonga ruxsat bering."); return; }
+  recChunks = [];
+  rec = new MediaRecorder(recStream);
+  rec.ondataavailable = e => { if (e.data.size) recChunks.push(e.data); };
+  rec.onstop = onRecordingStop;
+  rec.start(); recStart = Date.now();
+  const tickState = () => {
+    const s = Math.floor((Date.now() - recStart) / 1000);
+    setVoiceState(`Tinglayapman ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} · tugatish uchun bosing`, "rec");
+    if (s >= 60) stopRecording();
+  };
+  tickState(); recTimer = setInterval(tickState, 500);
+  startMeter(recStream);
+}
+function stopRecording() {
+  clearInterval(recTimer); stopMeter();
+  if (rec && rec.state !== "inactive") rec.stop();
+  recStream?.getTracks().forEach(t => t.stop()); recStream = null;
+}
+async function onRecordingStop() {
+  const dur = Date.now() - recStart, type = rec?.mimeType || "audio/webm";
+  rec = null;
+  if (!voiceOn) return;
+  if (dur < 700 || !recChunks.length) { setVoiceState("Juda qisqa yozuv. Tugmani bosing, gapiring va yana bosing."); return; }
+  voiceBusy = true;
+  setVoiceState("Tinglanmoqda va javob tayyorlanmoqda…", "busy");
+  try {
+    const wav = await blobToWav16k(new Blob(recChunks, { type }));
+    const { transcript, reply } = await api("/api/voice", { method: "POST", body: JSON.stringify({ audio: bytesToB64(new Uint8Array(wav)), mime: "audio/wav", history: turns.slice(-12) }) });
+    if (transcript) {
+      addMsg("me", transcript);
+      if (hasRisk(transcript)) flagRisk();
+    }
+    if (reply) addMsg("bot", reply);
+    if (transcript && reply) { turns.push({ role: "user", content: transcript }, { role: "assistant", content: reply }); countChatSession(); }
+    voiceBusy = false;
+    if (reply && $("#voiceSpeak").checked) {
+      setVoiceState("Javob o'qilmoqda · gapirish uchun tugmani bosing");
+      speak(reply).then(() => { if (!rec && !voiceBusy) setVoiceState("Gapirish uchun tugmani bosing"); });
+    } else setVoiceState("Gapirish uchun tugmani bosing");
+  } catch (e) {
+    voiceBusy = false;
+    setVoiceState(errText(e?.code));
+  }
+}
+
+// Ovoz darajasi: mikrofon tugmasi atrofidagi halqa gapirganda kattalashadi
+function startMeter(stream) {
+  try {
+    meterAc = new (window.AudioContext || window.webkitAudioContext)();
+    const an = meterAc.createAnalyser(); an.fftSize = 512;
+    meterAc.createMediaStreamSource(stream).connect(an);
+    const buf = new Uint8Array(an.fftSize);
+    const tick = () => {
+      an.getByteTimeDomainData(buf);
+      let sum = 0; for (const v of buf) sum += (v - 128) ** 2;
+      const rms = Math.sqrt(sum / buf.length) / 128;
+      $("#micRing").style.transform = `scale(${1 + Math.min(0.6, rms * 4)})`;
+      meterRaf = requestAnimationFrame(tick);
+    };
+    tick();
+  } catch {}
+}
+function stopMeter() { cancelAnimationFrame(meterRaf); meterAc?.close().catch(() => {}); meterAc = null; $("#micRing").style.transform = "scale(1)"; }
+
+// Yozuvni 16 kHz mono WAV ga aylantirish (Gemini barcha brauzerlardan bir xil formatni oladi)
+async function blobToWav16k(blob) {
+  const ac = new (window.AudioContext || window.webkitAudioContext)();
+  const audio = await ac.decodeAudioData(await blob.arrayBuffer());
+  ac.close().catch(() => {});
+  const rate = 16000, off = new OfflineAudioContext(1, Math.max(1, Math.ceil(audio.duration * rate)), rate);
+  const src = off.createBufferSource(); src.buffer = audio; src.connect(off.destination); src.start();
+  const out = await off.startRendering();
+  const pcm = out.getChannelData(0), bytes = new Uint8Array(pcm.length * 2), view = new DataView(bytes.buffer);
+  pcm.forEach((v, i) => view.setInt16(i * 2, Math.max(-1, Math.min(1, v)) * 0x7fff, true));
+  return pcmToWav(bytes, rate);
+}
+function pcmToWav(pcmBytes, rate) {
+  const buf = new ArrayBuffer(44 + pcmBytes.length), v = new DataView(buf), w = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  w(0, "RIFF"); v.setUint32(4, 36 + pcmBytes.length, true); w(8, "WAVE"); w(12, "fmt ");
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true);
+  v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, pcmBytes.length, true);
+  new Uint8Array(buf, 44).set(pcmBytes);
+  return buf;
+}
+function bytesToB64(bytes) { let s = ""; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); }
+const b64ToBytes = b64 => Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+
+// Javobni o'qish: avval Gemini ovozi, ishlamasa brauzerning o'z ovozi
+async function speak(text) {
+  try {
+    const { audio, mime } = await api("/api/tts", { method: "POST", body: JSON.stringify({ text }) });
+    const rate = +(String(mime).match(/rate=(\d+)/)?.[1] || 24000);
+    const url = URL.createObjectURL(new Blob([pcmToWav(b64ToBytes(audio), rate)], { type: "audio/wav" }));
+    playing = new Audio(url);
+    await new Promise(res => { playing.onended = playing.onerror = playing.onpause = res; playing.play().catch(res); });
+    URL.revokeObjectURL(url); playing = null;
+  } catch { await speakBrowser(text); }
+}
+function speakBrowser(text) {
+  if (!window.speechSynthesis) return Promise.resolve();
+  return new Promise(res => {
+    const u = new SpeechSynthesisUtterance(text), voices = speechSynthesis.getVoices();
+    const v = voices.find(x => /^uz/i.test(x.lang)) || voices.find(x => /^tr/i.test(x.lang));
+    if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "uz-UZ";
+    u.rate = 0.95; u.onend = u.onerror = res;
+    speechSynthesis.speak(u);
+  });
+}
+function stopPlayback() { if (playing) { playing.pause(); playing = null; } try { speechSynthesis?.cancel(); } catch {} }
+
+
 
 /* ---------- Ma'lumotlar bazasi: ishtirok va rozilik ---------- */
 let db = null, user = null, me = null, myRef = null, myDoc = null, isPsy = false, writeChain = Promise.resolve();
@@ -1229,6 +1399,7 @@ async function initDb() {
     if (!health) return offline("Server ulanmagan · natijalar shu brauzerda");
     backend = "cf";
     $("#chatNote").textContent = health.ai ? "Suhbat platforma serveridagi AI orqali ishlaydi. Suhbat matni saqlanmaydi." : "AI suhbatdosh serverda hali sozlanmagan.";
+    enableVoiceUI(!!health.voice);
     if (!health.db) return offline("Serverda ma'lumotlar bazasi sozlanmagan · natijalar shu brauzerda");
     ({ db, user } = cfBackend());
   }

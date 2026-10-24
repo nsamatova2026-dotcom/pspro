@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { HttpError, handle, json, participantId, pickProvider, readJson, requireDb } from "../../server/lib.js";
+import { HttpError, checkRateLimit, handle, json, participantId, pickProvider, readJson } from "../../server/lib.js";
 
 const MAX_CHARS = 60000;
 const MAX_OUTPUT = 4096;
@@ -14,7 +14,7 @@ export const onRequestPost = handle(async ({ request, env }) => {
   participantId(request);
   const body = await readJson(request, 300 * 1024);
   const messages = toMessages(body.input);
-  await rateLimit(env, request);
+  await checkRateLimit(env, request);
   const { text, truncated } = await PROVIDERS[provider](env, messages, body.tier);
   return json({ text, truncated, provider });
 });
@@ -120,18 +120,4 @@ function toMessages(input) {
   if (total > MAX_CHARS) throw new HttpError(413, "too_large");
   if (out[0].role !== "user" || out[out.length - 1].role !== "user") throw new HttpError(400, "bad_input");
   return out;
-}
-
-// IP manzil bo'yicha kunlik limit: bepul kvotani bir kishi tugatib qo'ymasligi uchun
-async function rateLimit(env, request) {
-  if (!env.DB) return;
-  await requireDb(env);
-  const limit = Number(env.AI_DAILY_LIMIT || 100);
-  const key = request.headers.get("cf-connecting-ip") || "unknown";
-  const day = new Date().toISOString().slice(0, 10);
-  const row = await env.DB.prepare(
-    `INSERT INTO ai_usage (key, day, n) VALUES (?1, ?2, 1)
-     ON CONFLICT(key, day) DO UPDATE SET n = n + 1 RETURNING n`,
-  ).bind(key, day).first();
-  if (row && row.n > limit) throw new HttpError(429, "daily_limit");
 }

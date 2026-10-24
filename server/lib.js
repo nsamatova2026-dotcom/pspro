@@ -148,3 +148,44 @@ export function validateInstrument(b, id) {
   if (!Array.isArray(b.bands) || !b.bands.length || b.bands.length > 10) bad();
   return { ...b, id, custom: true };
 }
+
+// Kunlik AI limiti: har bir respondentga AI_DAILY_LIMIT, bitta IP manzilga AI_DAILY_LIMIT_IP so'rov
+// (universitet tarmog'ida butun auditoriya bitta IP orqali chiqadi, shuning uchun IP limiti kattaroq)
+export async function checkRateLimit(env, request, cost = 1) {
+  if (!env.DB) return;
+  const db = await requireDb(env);
+  const day = new Date().toISOString().slice(0, 10);
+  const keys = [
+    ["p:" + (request.headers.get("x-participant-id") || "unknown"), Number(env.AI_DAILY_LIMIT || 60)],
+    ["ip:" + (request.headers.get("cf-connecting-ip") || "unknown"), Number(env.AI_DAILY_LIMIT_IP || 1500)],
+  ];
+  for (const [key, limit] of keys) {
+    const row = await db
+      .prepare(`INSERT INTO ai_usage (key, day, n) VALUES (?1, ?2, ?3) ON CONFLICT(key, day) DO UPDATE SET n = n + ?3 RETURNING n`)
+      .bind(key, day, cost)
+      .first();
+    if (row && row.n > limit) throw new HttpError(429, "daily_limit");
+  }
+}
+
+// Gemini API so'rovi: xatolarni platformaning umumiy kodlariga aylantiradi
+export async function callGemini(env, model, body) {
+  if (!env.GEMINI_API_KEY) throw new HttpError(503, "voice_not_configured");
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+    body: JSON.stringify(body),
+  });
+  if (r.status === 429) throw new HttpError(429, "rate_limited");
+  if (!r.ok) {
+    console.error(`Gemini xatosi ${r.status} (${model}):`, (await r.text()).slice(0, 500));
+    if (r.status === 400 || r.status === 401 || r.status === 403) throw new HttpError(503, "voice_not_configured");
+    if (r.status === 404) throw new HttpError(502, "model_not_found");
+    throw new HttpError(502, "ai_unavailable");
+  }
+  const data = await r.json();
+  const cand = data.candidates?.[0];
+  if (!cand) throw new HttpError(data.promptFeedback?.blockReason ? 422 : 502, data.promptFeedback?.blockReason ? "refused" : "ai_unavailable");
+  if (cand.finishReason === "SAFETY") throw new HttpError(422, "refused");
+  return cand;
+}

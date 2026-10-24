@@ -1,5 +1,7 @@
 // Cloudflare Worker: /api/* so'rovlarini server funksiyalariga yo'naltiradi, qolganini public/ dagi statik fayllardan beradi
 import * as ai from "../functions/api/ai.js";
+import * as tts from "../functions/api/tts.js";
+import * as voice from "../functions/api/voice.js";
 import * as auth from "../functions/api/auth.js";
 import * as health from "../functions/api/health.js";
 import * as me from "../functions/api/me.js";
@@ -18,6 +20,8 @@ const ROUTES = [
   [/^\/api\/me$/, me],
   [/^\/api\/auth$/, auth],
   [/^\/api\/ai$/, ai],
+  [/^\/api\/voice$/, voice],
+  [/^\/api\/tts$/, tts],
   [/^\/api\/panel$/, panelIndex],
   [/^\/api\/panel\/([^/]+)$/, panelItem, "id"],
   [/^\/api\/studies$/, studiesIndex],
