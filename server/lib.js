@@ -1,10 +1,12 @@
 // Pages Functions uchun umumiy yordamchi funksiyalar
 
 export class HttpError extends Error {
-  constructor(status, code) {
+  // extra — javobga qo'shiladigan ma'lumot (masalan, retryAfter: necha soniyadan keyin qayta urinish mumkin)
+  constructor(status, code, extra = null) {
     super(code);
     this.status = status;
     this.code = code;
+    this.extra = extra;
   }
 }
 
@@ -19,9 +21,9 @@ export const handle = (fn) => async (ctx) => {
   try {
     return await fn(ctx);
   } catch (e) {
-    if (e instanceof HttpError) return json({ error: e.code }, e.status);
+    if (e instanceof HttpError) return json({ error: e.code, ...(e.extra || {}) }, e.status);
     console.error(e);
-    return json({ error: "server_error" }, 500);
+    return json({ error: "server_error", detail: String(e?.message || e).slice(0, 200) }, 500);
   }
 };
 
@@ -58,6 +60,7 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS studies (id TEXT PRIMARY KEY, code TEXT NOT NULL UNIQUE, status TEXT NOT NULL, data TEXT NOT NULL, updated_at INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS instruments (id TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS api_usage (key TEXT NOT NULL, bucket TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, tokens INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (key, bucket))`,
 ];
 let schemaReady = null;
 
@@ -129,6 +132,21 @@ export function pickProvider(env) {
   return ["anthropic", "gemini", "workers-ai"].find((p) => ready[p]) || null;
 }
 
+// Zaxira tartibi: avval tanlangan provayder, so'ng kaliti/bog'lanishi mavjud bepul provayderlar
+export function providerOrder(env) {
+  const ready = { anthropic: !!env.ANTHROPIC_API_KEY, gemini: !!env.GEMINI_API_KEY, "workers-ai": !!env.AI };
+  const first = pickProvider(env);
+  return [...new Set([first, "gemini", "workers-ai"].filter((p) => p && ready[p]))];
+}
+
+// Promise'ga vaqt chegarasi (Workers AI kabi signal qabul qilmaydigan chaqiruvlar uchun)
+export function withTimeout(promise, ms) {
+  if (!ms) return promise;
+  let timer;
+  const limit = new Promise((_, reject) => { timer = setTimeout(() => reject(new HttpError(504, "timeout")), ms); });
+  return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+}
+
 // Muallif metodikalari (tadqiqotchi yaratgan so'rovnomalar)
 const INSTRUMENT_ID_RE = /^c-[a-z0-9]{4,20}$/;
 const isStr = (v, max) => typeof v === "string" && v.length <= max;
@@ -180,23 +198,70 @@ export async function callGemini(env, model, body, notConfigured = "voice_not_co
     });
   } catch (e) {
     if (e?.name === "TimeoutError" || e?.name === "AbortError") throw new HttpError(504, "timeout");
-    throw e;
+    throw new HttpError(502, "network", { detail: String(e?.message || e).slice(0, 200) });
   }
-  if (r.status === 429) throw new HttpError(429, "rate_limited");
+  if (r.status === 429) {
+    // Google limit tugaganda xabarda limit nomi, qiymati va kutish vaqti bo'ladi: ularni eslab qolamiz
+    const q = parseQuotaError(await r.text());
+    await recordApiUsage(env, "gemini:" + model, 0, { ...q, model, at: Date.now() });
+    throw new HttpError(429, "rate_limited", q.retrySec ? { retryAfter: Math.ceil(q.retrySec) } : null);
+  }
   if (!r.ok) {
     const text = (await r.text()).slice(0, 800);
     console.error(`Gemini xatosi ${r.status} (${model}):`, text);
+    // Google xabarining o'zi diagnostika uchun javobga qo'shiladi (kalit qiymati unda bo'lmaydi)
+    let gmsg = text;
+    try { gmsg = JSON.parse(text).error?.message || text; } catch {}
+    const extra = { detail: `${r.status}: ${String(gmsg).slice(0, 220)}` };
     // Kalit bilan bog'liq xatolar va so'rov parametri bilan bog'liq xatolar alohida ajratiladi
-    if (r.status === 401 || r.status === 403 || /API key|API_KEY|PERMISSION_DENIED/i.test(text)) throw new HttpError(503, notConfigured);
-    if (r.status === 404 || /not found|is not supported for generateContent/i.test(text)) throw new HttpError(502, "model_not_found");
-    if (r.status === 400) throw new HttpError(400, "bad_request");
-    throw new HttpError(502, "ai_unavailable");
+    if (r.status === 401 || r.status === 403 || /API key|API_KEY|PERMISSION_DENIED/i.test(text)) throw new HttpError(503, notConfigured, extra);
+    if (r.status === 404 || /not found|is not supported for generateContent/i.test(text)) throw new HttpError(502, "model_not_found", extra);
+    if (r.status === 400) throw new HttpError(400, "bad_request", extra);
+    throw new HttpError(502, "ai_unavailable", extra);
   }
   const data = await r.json();
+  await recordApiUsage(env, "gemini:" + model, data.usageMetadata?.totalTokenCount || 0);
   const cand = data.candidates?.[0];
   if (!cand) throw new HttpError(data.promptFeedback?.blockReason ? 422 : 502, data.promptFeedback?.blockReason ? "refused" : "ai_unavailable");
   if (cand.finishReason === "SAFETY") throw new HttpError(422, "refused");
   return cand;
+}
+
+// Google 429 xabaridan limit ma'lumotini ajratib olish (QuotaFailure va RetryInfo)
+export function parseQuotaError(text) {
+  try {
+    const err = JSON.parse(text).error || {}, details = err.details || [];
+    const qf = details.find((d) => String(d["@type"] || "").includes("QuotaFailure"));
+    const ri = details.find((d) => String(d["@type"] || "").includes("RetryInfo"));
+    const v = qf?.violations?.[0] || {};
+    return {
+      quotaId: v.quotaId || v.quotaMetric || null,
+      limit: v.quotaValue != null ? Number(v.quotaValue) : null,
+      retrySec: ri?.retryDelay ? parseFloat(ri.retryDelay) : null,
+      message: String(err.message || "").slice(0, 300),
+    };
+  } catch {
+    return { quotaId: null, limit: null, retrySec: null, message: String(text || "").slice(0, 300) };
+  }
+}
+
+// Tashqi AI xizmatlaridan foydalanish hisobi: kunlik va daqiqalik so'rovlar, tokenlar; 429 hodisasi bo'lsa — oxirgi limit xabari.
+// Google qolgan limitni oldindan bildirmaydi, shuning uchun so'rovlarni platformaning o'zi sanaydi.
+export async function recordApiUsage(env, key, tokens = 0, limitHit = null) {
+  if (!env.DB) return;
+  try {
+    const db = await requireDb(env);
+    const now = new Date(), day = "d:" + now.toISOString().slice(0, 10), minute = "m:" + now.toISOString().slice(0, 16);
+    const up = `INSERT INTO api_usage (key, bucket, n, tokens) VALUES (?1, ?2, 1, ?3) ON CONFLICT(key, bucket) DO UPDATE SET n = n + 1, tokens = tokens + ?3`;
+    const stmts = [db.prepare(up).bind(key, day, tokens), db.prepare(up).bind(key, minute, tokens)];
+    if (limitHit) {
+      stmts.push(db.prepare("INSERT INTO settings (key, value, updated_at) VALUES (?1, ?2, ?3) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at")
+        .bind("limit:" + key, JSON.stringify(limitHit), Date.now()));
+    }
+    // Eski daqiqalik yozuvlarni vaqti-vaqti bilan tozalash
+    if (Math.random() < 0.05) stmts.push(db.prepare("DELETE FROM api_usage WHERE bucket LIKE 'm:%' AND bucket < ?1").bind("m:" + new Date(Date.now() - 3600e3).toISOString().slice(0, 16)));
+    await db.batch(stmts);
+  } catch (e) { console.error("Foydalanish hisobini yozib bo'lmadi:", e?.message || e); }
 }
 
 // Kalit uchun mavjud Gemini modellari (1 soat keshlanadi)
@@ -275,7 +340,7 @@ async function saveResolved(env, kind, model) {
 // Gemini'ga so'rov. Har bir urinishga vaqt chegarasi qo'yiladi; model topilmasa, parametrni rad etsa yoki juda sekin bo'lsa,
 // keyingi nomzodga o'tiladi (sozlamadagi → gemini-flash-latest → ro'yxatdagi flash → lite). Tez ishlagan model bazada saqlanadi.
 // tune(model, variant) — so'rov tanasi; natija: { cand, model, trace }.
-export async function geminiGenerate(env, kind, tune, notConfigured = "voice_not_configured") {
+export async function geminiGenerate(env, kind, tune, notConfigured = "voice_not_configured", { budgetMs = 70000 } = {}) {
   if (!env.GEMINI_API_KEY) throw new HttpError(503, notConfigured);
   await loadResolved(env);
   const timeoutMs = Number(kind === "tts" ? env.GEMINI_TTS_TIMEOUT_MS || 40000 : env.GEMINI_TIMEOUT_MS || 25000);
@@ -283,27 +348,31 @@ export async function geminiGenerate(env, kind, tune, notConfigured = "voice_not
     : kind === "voice" ? env.GEMINI_VOICE_MODEL || env.GEMINI_MODEL || "gemini-flash-latest"
     : env.GEMINI_MODEL || "gemini-flash-latest";
   const started = Date.now(), tried = new Set(), trace = [];
+  // Muvaffaqiyatsiz bo'lsa ham urinishlar izi javobga qo'shiladi: qaysi model qanday xato berganini ko'rish uchun
+  const withTrace = (e) => { geminiState.trace[kind] = trace; e.extra = { ...(e.extra || {}), trace }; return e; };
   geminiState.slow ??= {};
   let lastErr = null;
   const attempt = async (model) => {
-    if (!model || tried.has(model) || Date.now() - started > 70000) return null;
+    if (!model || tried.has(model) || Date.now() - started > budgetMs) return null;
     tried.add(model);
     const variants = kind === "tts" ? 1 : thinkingVariants(model);
     for (let v = 0; v < variants; v++) {
       const body = tune(model, v), t = Date.now();
+      const left = budgetMs - (t - started);
+      if (left < 3000) return null;
       try {
-        const cand = await callGemini(env, model, body, notConfigured, timeoutMs);
+        const cand = await callGemini(env, model, body, notConfigured, Math.min(timeoutMs, left));
         trace.push({ model, think: thinkingLabel(body.generationConfig || {}), result: "ok", ms: Date.now() - t });
         delete geminiState.slow[model];
         await saveResolved(env, kind, model);
         return { cand, model };
-      } catch (e) {
-        if (!(e instanceof HttpError)) throw e;
-        trace.push({ model, think: thinkingLabel(body.generationConfig || {}), result: e.code, ms: Date.now() - t });
+      } catch (err) {
+        const e = err instanceof HttpError ? err : new HttpError(502, "network", { detail: String(err?.message || err).slice(0, 200) });
+        trace.push({ model, think: thinkingLabel(body.generationConfig || {}), result: e.code, ms: Date.now() - t, ...(e.extra?.detail ? { detail: e.extra.detail } : {}) });
         if (e.code === "bad_request" && v < variants - 1) continue; // boshqa «o'ylash» shakli bilan qayta urinish
         if (e.code === "timeout") geminiState.slow[model] = Date.now() + 10 * 60e3;
         if (["model_not_found", "bad_request", "timeout"].includes(e.code)) { lastErr = e; return null; }
-        throw e;
+        throw withTrace(e);
       }
     }
     return null;
@@ -322,8 +391,7 @@ export async function geminiGenerate(env, kind, tune, notConfigured = "voice_not
     const res = await attempt(m);
     if (res) { geminiState.trace[kind] = trace; return { ...res, trace }; }
   }
-  geminiState.trace[kind] = trace;
-  throw lastErr || new HttpError(502, "model_not_found");
+  throw withTrace(lastErr || new HttpError(502, "model_not_found"));
 }
 
 // Matnni Gemini ovozida o'qish: base64 PCM va uning formati
