@@ -91,6 +91,8 @@ main { padding-block: 32px 64px; padding-left: 40px; padding-right: max(16px, en
 .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
 .chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .chip.ok { background: var(--ok-soft); color: var(--ok); }
+.callout { border-radius: 10px; padding: 10px 12px; margin: 8px 0; background: var(--ok-soft); color: var(--ink, inherit); overflow-wrap: anywhere; }
+.callout.crit { background: var(--crit-soft, #fde8e8); }
 .chip.warn { background: var(--warn-soft); color: var(--warn); }
 .chip.crit { background: var(--crit-soft); color: var(--crit); }
 .chip.neutral { background: var(--accent-soft); color: var(--accent); }
@@ -966,7 +968,7 @@ async function api(path, opts = {}) {
   try { r = await fetch(path, { ...opts, headers }); }
   catch (e) { throw { code: e?.name === "AbortError" ? "cancelled" : "unavailable" }; }
   const body = await r.json().catch(() => ({}));
-  if (!r.ok) throw { code: r.status === 429 && body.error !== "daily_limit" ? "rate_limited" : body.error || "unavailable", status: r.status, retryAfter: body.retryAfter, detail: body.detail, trace: body.trace, tried: body.tried };
+  if (!r.ok) throw { code: r.status === 429 && body.error !== "daily_limit" ? "rate_limited" : body.error || "unavailable", status: r.status, retryAfter: body.retryAfter, detail: body.detail, attempts: body.attempts };
   return body;
 }
 async function cfSample(input, opts = {}) {
@@ -1035,12 +1037,16 @@ const getSample = () => (samplePromise ??= (window.claude?.use
   : apiAvailable().then(h => h?.ai ? cfSample : null)));
 // Limit xatosida Google bildirgan kutish vaqti, boshqa xatolarda Google xabarining o'zi qo'shiladi (diagnostika uchun)
 const errFor = e => e?.code === "rate_limited" && e.retryAfter ? `AI xizmatining limiti vaqtincha tugadi. Taxminan ${e.retryAfter} soniyadan keyin qayta urinib ko'ring.`
-  : errText(e?.code) + (e?.tried?.length > 1 ? " " + traceText(e.tried) : e?.detail ? ` [${e.detail}]` : "");
+  : errText(e?.code) + (e?.detail ? ` [${e.detail}]` : "");
 const errText = code => ({
-  timeout: "AI modellari belgilangan vaqtda javob bermadi. Birozdan keyin qayta urinib ko'ring.",
-  ai_unavailable: "AI xizmati xato bilan javob berdi.",
-  network: "Serverdan AI xizmatiga ulanib bo'lmadi.",
-  provider_limit: "AI xizmatining bugungi bepul limiti tugadi. Ertaga qayta urinib ko'ring.",
+  timeout: "Gemini belgilangan vaqtda javob bermadi. Birozdan keyin qayta urinib ko'ring.",
+  gemini_unavailable: "Gemini vaqtincha band yoki xato bilan javob berdi. Birozdan keyin qayta urinib ko'ring.",
+  gemini_not_configured: "Gemini kaliti serverda kiritilmagan (Cloudflare → Worker → Settings → GEMINI_API_KEY).",
+  gemini_key: "Gemini kaliti ishlamadi: kalit noto'g'ri, o'chirilgan yoki loyihada Gemini API yoqilmagan. Yangi kalit oling: aistudio.google.com/apikey",
+  gemini_location: "Google bu hududdan Gemini API'ga ruxsat bermadi (server joylashuvi). README'dagi «Joylashuv xatosi» bo'limiga qarang.",
+  gemini_quota: "Gemini kalitining limiti tugadi. Birozdan keyin yoki ertaga qayta urinib ko'ring.",
+  ai_unavailable: "Gemini xato bilan javob berdi.",
+  network: "Serverdan Gemini'ga ulanib bo'lmadi.",
   server_error: "Platforma serverida xato yuz berdi.",
   unavailable: "Platforma serveriga ulanib bo'lmadi. Internetni tekshiring.",
   bad_request: "AI xizmati so'rovni qabul qilmadi.",
@@ -1051,9 +1057,9 @@ const errText = code => ({
   refused: "AI bu so'rovga javob bera olmadi.",
   ai_not_configured: "AI serverda sozlanmagan.",
   bad_json: "AI javobini o'qib bo'lmadi. Qayta urinib ko'ring.",
-  voice_not_configured: "Ovozli suhbat serverda sozlanmagan yoki Gemini kaliti ishlamadi.",
+  voice_not_configured: "Ovozli suhbat serverda sozlanmagan (GEMINI_API_KEY kerak).",
   bad_audio: "Yozuvni o'qib bo'lmadi. Qayta gapirib ko'ring.",
-  model_not_found: "Gemini modeli topilmadi. Platforma sozlamalarini tekshirish kerak."
+  model_not_found: "Bu kalit uchun Gemini modellari topilmadi. Tadqiqotchi panelidagi «Gemini'ni tekshirish» tugmasini bosing."
 }[code] || `AI bilan bog'lanib bo'lmadi${code ? ` (${code})` : ""}. Keyinroq qayta urinib ko'ring.`);
 
 /* ---------- Xavf belgilari (lokal) ---------- */
@@ -1281,7 +1287,7 @@ async function voiceStream(payload) {
   let r;
   try { r = await fetch("/api/voice", { method: "POST", headers: apiHeaders(), body: JSON.stringify(payload) }); }
   catch { throw { code: "unavailable" }; }
-  if (!r.ok) { const b = await r.json().catch(() => ({})); throw { code: r.status === 429 && b.error !== "daily_limit" ? "rate_limited" : b.error || (r.status >= 500 ? "server_error" : "unavailable"), status: r.status, retryAfter: b.retryAfter, detail: b.detail, trace: b.trace || b.tried }; }
+  if (!r.ok) { const b = await r.json().catch(() => ({})); throw { code: r.status === 429 && b.error !== "daily_limit" ? "rate_limited" : b.error || (r.status >= 500 ? "server_error" : "unavailable"), status: r.status, retryAfter: b.retryAfter, detail: b.detail, attempts: b.attempts }; }
   if (!(r.headers.get("content-type") || "").includes("ndjson")) { const one = await r.json(); let used = false; return { next: async () => (used ? null : (used = true, one)) }; }
   const reader = r.body.getReader(), dec = new TextDecoder();
   let buf = "";
@@ -1318,11 +1324,11 @@ async function onRecordingStop() {
     if (transcript && reply) { turns.push({ role: "user", content: transcript }, { role: "assistant", content: reply }); countChatSession(); }
     voiceBusy = false;
     const sec = ms => (ms / 1000).toFixed(1) + " s";
-    // Umumiy vaqt va qavs ichida serverdagi AI sarflagan vaqt: farqi internet va yozuvni tayyorlashga ketgan vaqt
-    const timing = [`javob ${sec(tText - t0)}${first.ms ? ` (server ${sec(first.ms)}${first.model ? ", " + first.model : ""})` : ""}`];
+    // Umumiy vaqt va qavs ichida Gemini'ning o'zi sarflagan vaqt: farqi internet va yozuvni tayyorlashga ketgan vaqt
+    const timing = [`javob ${sec(tText - t0)}${first.ms ? ` (Gemini ${sec(first.ms)}${first.model ? ", " + first.model : ""})` : ""}`];
     $("#voiceTiming").textContent = "Oxirgi navbat: " + timing.join(" · ");
     // Bir nechta urinish bo'lsa yoki javob kechiksa, qaysi model qancha vaqt olgani ko'rsatiladi
-    const tr = first.trace || [];
+    const tr = first.attempts || [];
     $("#voiceTrace").textContent = tr.some(x => x.result !== "ok") || (first.ms || 0) > 8000 ? traceText(tr) : "";
     if (!reply || !speakIt) { setVoiceState("Gapirish uchun tugmani bosing"); return; }
     setVoiceState("Ovoz tayyorlanmoqda · gapirish uchun tugmani bosing");
@@ -1337,15 +1343,15 @@ async function onRecordingStop() {
     voiceBusy = false;
     setVoiceState(errFor(e));
     // Xatoda ham qaysi model qanday javob bergani ko'rsatiladi
-    $("#voiceTrace").textContent = traceText(e?.trace || e?.tried || []);
+    $("#voiceTrace").textContent = traceText(e?.attempts || []);
   } finally { refreshQuota(); }
 }
 
 // Server urinishlari izi: model/provayder, natija, vaqt va xato tafsiloti
 function traceText(tr) {
   if (!tr.length) return "";
-  const why = { timeout: "vaqt tugadi", bad_request: "parametr rad etildi", model_not_found: "topilmadi", rate_limited: "limit", provider_limit: "kunlik limit", ai_unavailable: "xizmat xatosi", network: "ulanish xatosi", ai_not_configured: "kalit ishlamadi", voice_not_configured: "kalit ishlamadi" };
-  return "Urinishlar: " + tr.map(x => `${x.model || x.provider}${x.think ? ` (${x.think})` : ""} ${x.result === "ok" ? "" : (why[x.result] || x.result) + ", "}${x.ms != null ? (x.ms / 1000).toFixed(1) + " s" : ""}${x.detail ? ` [${x.detail}]` : ""}`).join(" → ");
+  const why = { timeout: "vaqt tugadi", bad_request: "parametr rad etildi", model_not_found: "topilmadi", gemini_quota: "limit", gemini_unavailable: "band", gemini_key: "kalit ishlamadi", gemini_location: "hudud cheklovi", network: "ulanish xatosi", refused: "rad etildi" };
+  return "Urinishlar: " + tr.map(x => `${x.model} ${x.result === "ok" ? "" : (why[x.result] || x.result) + ", "}${x.ms != null ? (x.ms / 1000).toFixed(1) + " s" : ""}${x.detail ? ` [${x.detail}]` : ""}`).join(" → ");
 }
 
 // Ovoz darajasi: mikrofon tugmasi atrofidagi halqa gapirganda kattalashadi
@@ -2784,7 +2790,7 @@ function refreshView(v) {
 }
 
 /* ---------- AI limitlari ---------- */
-const SERVICE_LABEL = k => k.startsWith("gemini:") ? "Gemini · " + k.slice(7) : k.startsWith("workers-ai:") ? "Workers AI · " + k.slice(11).replace(/^@cf\/[^/]+\//, "") : k;
+const SERVICE_LABEL = k => k.startsWith("gemini:") ? "Gemini · " + k.slice(7) : k;
 const quotaLabel = id => /token/i.test(id || "") ? (/minute/i.test(id) ? "token/daqiqa" : "token/kun") : /day/i.test(id || "") ? "so'rov/kun" : /minute/i.test(id || "") ? "so'rov/daqiqa" : "";
 function limitedText(list) {
   return list.map(l => `${SERVICE_LABEL(l.service)}: ${l.daily && !l.retryAfter ? "kunlik limit tugagan (Google uni Tinch okeani vaqti bilan yarim tunda yangilaydi)" : `limit vaqtincha tugagan, ~${l.retryAfter} soniyadan keyin tiklanadi`}`).join("; ");
@@ -2821,7 +2827,8 @@ async function renderLimitsCard(force) {
       <td>${lim ? `<span class="num">${used} / ${lim}</span> <span class="note">${quotaLabel(hit.quotaId)}</span>${pct != null ? `<span class="progress" style="margin-top:4px"><i style="width:${pct}%;${pct >= 90 ? "background:var(--crit)" : pct >= 70 ? "background:var(--warn)" : ""}"></i></span>` : ""}` : `<span class="note">hali ma'lum emas</span>`}</td><td>${state}</td></tr>`;
   }).join("");
   const p = d.platform;
-  box.innerHTML = `<div class="row" style="justify-content:space-between"><h3>API limitlari</h3><button type="button" class="btn small" data-limits-refresh>Yangilash</button></div>
+  box.innerHTML = `<div class="row" style="justify-content:space-between"><h3>Gemini API</h3><span class="row"><button type="button" class="btn small" data-gemini-check>Gemini'ni tekshirish</button><button type="button" class="btn small" data-limits-refresh>Yangilash</button></span></div>
+    <div id="geminiCheck"></div>
     <div class="kpis">
       <div class="kpi"><span class="label">Bugungi AI so'rovlari</span><span class="v">${p.requestsToday}</span><span class="s">${p.activeRespondents} respondentdan</span></div>
       <div class="kpi"><span class="label">Eng faol respondent</span><span class="v">${p.maxPerRespondent} / ${d.limits.perUser}</span><span class="s">kunlik shaxsiy limit</span></div>
@@ -2829,9 +2836,28 @@ async function renderLimitsCard(force) {
       <div class="kpi"><span class="label">Bitta IP dan</span><span class="v">${p.maxPerIp} / ${d.limits.perIp}</span><span class="s">auditoriya bitta IP orqali chiqishi mumkin</span></div>
     </div>
     ${rows ? `<div class="tablewrap"><table class="history"><thead><tr><th>Xizmat</th><th>Bugun</th><th>Joriy daqiqada</th><th>Tokenlar (bugun)</th><th>Google limiti</th><th>Holat</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<p class="note">Bugun hali AI so'rovi bo'lmagan.</p>`}
-    <p class="note">Google qolgan limitni oldindan bildirmaydi: so'rovlarni platformaning o'zi sanaydi, Google limiti esa birinchi «limit tugadi» javobidan aniqlanadi. Bepul tarif limitlari: <a href="https://ai.google.dev/gemini-api/docs/rate-limits" target="_blank" rel="noopener">ai.google.dev/gemini-api/docs/rate-limits</a>. Workers AI bepul limiti — kuniga 10 000 «neyron» (Cloudflare panelida: AI → Workers AI). Shaxsiy va IP limitlari <code>wrangler.toml</code> dagi <code>AI_DAILY_LIMIT</code> va <code>AI_DAILY_LIMIT_IP</code> da o'zgartiriladi.</p>`;
+    <p class="note">Google qolgan limitni oldindan bildirmaydi: so'rovlarni platformaning o'zi sanaydi, Google limiti esa birinchi «limit tugadi» javobidan aniqlanadi. Bepul tarif limitlari: <a href="https://ai.google.dev/gemini-api/docs/rate-limits" target="_blank" rel="noopener">ai.google.dev/gemini-api/docs/rate-limits</a>. Shaxsiy va IP limitlari <code>wrangler.toml</code> dagi <code>AI_DAILY_LIMIT</code> va <code>AI_DAILY_LIMIT_IP</code> da o'zgartiriladi.</p>`;
 }
-$("#v-boshqaruv").addEventListener("click", e => { if (e.target.closest("[data-limits-refresh]")) { $("#limitsCard").innerHTML = `<h3>API limitlari</h3><p class="note">Yuklanmoqda…</p>`; renderLimitsCard(true); } });
+$("#v-boshqaruv").addEventListener("click", e => {
+  if (e.target.closest("[data-limits-refresh]")) { $("#limitsCard").innerHTML = `<h3>Gemini API</h3><p class="note">Yuklanmoqda…</p>`; renderLimitsCard(true); }
+  if (e.target.closest("[data-gemini-check]")) checkGemini();
+});
+// Gemini tekshiruvi: kalit ishlayaptimi, qaysi model javob beradi va qancha vaqt oladi; xato bo'lsa — Google xabarining o'zi
+async function checkGemini() {
+  const box = $("#geminiCheck"); if (!box) return;
+  box.innerHTML = `<p class="note">Gemini'ga sinov so'rovi yuborilmoqda…</p>`;
+  let d;
+  try { d = await api("/api/gemini"); }
+  catch (e) { box.innerHTML = `<div class="callout crit">${esc(errFor(e))}</div>`; return; }
+  const t = d.test || {};
+  const tries = (t.attempts || []).map(a => `<li><code>${esc(a.model)}</code> — ${a.result === "ok" ? "ishladi" : esc(errText(a.result))}, ${(a.ms / 1000).toFixed(1)} s${a.detail ? `<br><span class="note">${esc(a.detail)}</span>` : ""}</li>`).join("");
+  box.innerHTML = `<div class="callout ${t.ok ? "ok" : "crit"}">
+      ${t.ok ? `<b>Gemini ishlayapti.</b> Model: <code>${esc(t.model)}</code>, javob vaqti ${(t.ms / 1000).toFixed(1)} s.` : `<b>Gemini ishlamayapti.</b> ${esc(errText(t.error))}${t.detail ? `<br><span class="note">Google xabari: ${esc(t.detail)}</span>` : ""}`}
+    </div>
+    ${tries ? `<ul class="note">${tries}</ul>` : ""}
+    <p class="note">Kalit uchun mavjud modellar: ${d.available?.count != null ? `${d.available.count} ta (${esc((d.available.flash || []).join(", "))})` : esc(d.available?.detail || "—")}.
+    Server joylashuvi: ${esc([d.where?.colo, d.where?.country].filter(Boolean).join(", ") || "—")}.</p>`;
+}
 const goTo = (v, then) => { show(v); if (then) then(); };
 
 // Respondent bosh sahifasi
@@ -2940,7 +2966,7 @@ function renderResHome() {
     </div>
     <div class="panel"><h3>Ishni boshlash</h3><ol class="guide">${steps.map(([t, d, done, attr, btn], i) => `<li class="${done ? "done" : ""}"><span class="nb">${done ? "✓" : i + 1}</span><b>${t}</b><span class="note">${d}</span><div><button type="button" class="btn small${done ? "" : " primary"}" ${attr}>${btn}</button></div></li>`).join("")}</ol></div>
     ${risks.length ? `<div class="panel"><div class="row" style="justify-content:space-between"><h3>E'tibor talab qiladi</h3><span class="chip crit">${risks.length}</span></div><ul class="tasks">${risks.slice(0, 5).map(x => `<li class="task"><span><b class="num">${esc(x.p.code || "—")}</b> <span class="note">${esc(x.st.title)} · PHQ-9 ning 9-savoli</span></span><button type="button" class="btn small" data-res-open="${x.st.id}">Ko'rish</button></li>`).join("")}</ul></div>` : ""}
-    <div class="panel" id="limitsCard"><h3>API limitlari</h3><p class="note">Yuklanmoqda…</p></div>
+    <div class="panel" id="limitsCard"><h3>Gemini API</h3><p class="note">Yuklanmoqda…</p></div>
     <div class="panel"><div class="row" style="justify-content:space-between"><h3>Tadqiqotlarim</h3><button type="button" class="btn small primary" data-res-new>Yangi tadqiqot</button></div>
       ${studies.length ? `<div class="study-cards">${studies.map(st => {
         const n = countIn(st), w0 = st.waves[0], rows = allParticipants.filter(p => p.studies?.[st.id]);

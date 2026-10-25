@@ -1,4 +1,4 @@
 # Mahalliy ishga tushirish uchun: nusxasini .dev.vars nomi bilan saqlang
 PSY_TOKEN=uzun-tasodifiy-maxfiy-kalit
-# Ixtiyoriy: Gemini ishlatmoqchi bo'lsangiz (wrangler.toml da AI_PROVIDER = "gemini")
-# GEMINI_API_KEY=...
+# Google AI Studio'dan olingan Gemini kaliti (https://aistudio.google.com/apikey)
+GEMINI_API_KEY=...

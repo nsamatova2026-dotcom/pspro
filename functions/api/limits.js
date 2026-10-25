@@ -1,4 +1,4 @@
-import { handle, isPsychologist, json, participantId, pickProvider, requireDb } from "../../server/lib.js";
+import { handle, isPsychologist, json, participantId, requireDb } from "../../server/lib.js";
 
 // AI limitlari: respondent o'z kunlik so'rovlarini ko'radi; tadqiqotchi barcha xizmatlar bo'yicha batafsil hisobni ko'radi
 export const onRequestGet = handle(async ({ request, env }) => {
@@ -20,8 +20,8 @@ export const onRequestGet = handle(async ({ request, env }) => {
     .filter(Boolean);
   const out = {
     you: { used: mine?.n || 0, limit: limits.perUser },
-    provider: pickProvider(env),
-    voice: !!(env.GEMINI_API_KEY || env.AI),
+    provider: env.GEMINI_API_KEY ? "gemini" : null,
+    voice: !!env.GEMINI_API_KEY,
     limited: active,
   };
   if (!(await isPsychologist(request, env))) return json(out);

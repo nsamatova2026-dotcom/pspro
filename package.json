@@ -7,9 +7,6 @@
     "deploy": "wrangler deploy",
     "db:init": "wrangler d1 execute ruhai-db --remote --file=schema.sql"
   },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^1.2.0"
-  },
   "devDependencies": {
     "wrangler": "^4.152.0"
   }

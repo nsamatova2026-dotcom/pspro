@@ -30,7 +30,7 @@ Dissertatsiya mavzusi, vazifalari va gipotezalari: [docs/dissertatsiya-mavzusi.m
 | **Tadqiqotlarim** | Kod yoki havola orqali tadqiqotga qo'shilish, rozilik, ochilgan o'lchovlar va tayinlangan treyninglar ro'yxati, tadqiqotdan chiqish (javoblar o'chiriladi) |
 | **Testlar** | Bankdagi istalgan shkala bilan o'z-o'zini baholash va natijalar tarixi |
 | **Treyninglar** | 12 ta mashq: taymerli nafas mashqlari, bosqichli va yozma KXT mashqlari; mashqdan oldin va keyin kayfiyat bahosi |
-| **Kundalik**, **Suhbatdosh** | Kunlik holat, AI matn tahlili, KXT asosidagi AI-suhbatdosh (bepul Workers AI yoki Gemini orqali) |
+| **Kundalik**, **Suhbatdosh** | Kunlik holat, AI matn tahlili, KXT asosidagi AI-suhbatdosh (Google Gemini orqali) |
 
 ### Instrumentlar banki
 | Metodika | Soha | Savollar |
@@ -69,54 +69,46 @@ npm run deploy
 npx wrangler secret put PSY_TOKEN
 ```
 
-### AI provayderi (bepul variantlar)
-AI-suhbatdosh, kundalik tahlili va psixolog uchun AI xulosa quyidagi provayderlardan biri bilan ishlaydi. Provayder [`wrangler.toml`](wrangler.toml) dagi `AI_PROVIDER` qatorida tanlanadi.
+### Gemini (AI)
+Platformadagi barcha AI funksiyalari — matnli suhbatdosh, kundalik tahlili, psixolog uchun AI xulosa, ovozli suhbat va javoblarni ovozda o'qish — faqat Google Gemini API orqali ishlaydi.
 
-| Provayder | Narxi | Nima kerak | Izoh |
-|---|---|---|---|
-| `workers-ai` (standart) | Bepul: kuniga 10 000 «neyron» | Hech narsa — Cloudflare hisobiga kiritilgan | Standart model `@cf/google/gemma-3-12b-it`. O'zbek tilida javob sifati o'rtacha |
-| `gemini` | Bepul tarif (daqiqalik va kunlik limit bilan) | [Google AI Studio](https://aistudio.google.com/apikey)da bepul kalit | O'zbek tilini yaxshiroq tushunadi. Kalitni `GEMINI_API_KEY` nomli Secret sifatida qo'shing |
-| `anthropic` | Pullik | `ANTHROPIC_API_KEY` Secret | Eng yuqori sifat |
+**Kalitni kiritish:**
+1. [aistudio.google.com/apikey](https://aistudio.google.com/apikey) sahifasida *Create API key* tugmasini bosing va kalitni nusxalang.
+2. Cloudflare panelida: *Workers & Pages → pspro → Settings → Variables and Secrets → Add*. Turi: **Secret**, nomi: `GEMINI_API_KEY`, qiymati: kalit. *Deploy* tugmasini bosing.
+3. Platformaga tadqiqotchi sifatida kiring va «Boshqaruv» sahifasidagi **«Gemini'ni tekshirish»** tugmasini bosing. U Gemini'ga sinov so'rovi yuboradi va natijani ko'rsatadi: ishlagan model va javob vaqti, yoki Google qaytargan xato matni.
 
-Bepul limit tugasa, platforma AI so'rovlariga «Bugungi limit tugadi» deb javob beradi; testlar, treyninglar va tadqiqotlar AI'siz ham to'liq ishlaydi.
+**Xatolar va ularning yechimi** (tekshiruv natijasida ko'rinadi):
+
+| Xabar | Sababi | Yechimi |
+|---|---|---|
+| Kalit ishlamadi (`API key not valid`, 403) | Kalit noto'g'ri nusxalangan, o'chirilgan yoki loyihada Gemini API yoqilmagan | AI Studio'da yangi kalit oling va `GEMINI_API_KEY` ni yangilang |
+| Hudud cheklovi (`User location is not supported`) | Cloudflare so'rovni Gemini qo'llab-quvvatlamaydigan mamlakatdagi serverdan yubordi | `wrangler.toml` ga `[placement]` bo'limini qo'shib, `region = "gcp:us-central1"` qatorini yozing (Worker AQSHdagi serverda ishlaydi) |
+| Limit tugadi (429) | Bepul tarifning daqiqalik yoki kunlik limiti | Kuting yoki Google Cloud'da shu kalit loyihasiga billing ulang (Tier 1). Google AI Pro obunasi API limitini oshirmaydi |
+| Model topilmadi (404) | Bu kalitda sozlamadagi model yo'q | Platforma avtomatik ravishda boshqa modelni sinaydi; tekshiruvda mavjud modellar ro'yxati ko'rinadi |
+
+Kalit faqat serverda saqlanadi va brauzerga yuborilmaydi. Gemini kaliti bo'lmasa ham testlar, treyninglar va tadqiqotlar to'liq ishlaydi; faqat AI funksiyalari o'chiq bo'ladi.
 
 ### Ovozli suhbatdosh
-«Suhbatdosh» bo'limidagi «Ovozli suhbat» rejimi Workers AI bog'lanishi (`[ai]`) bilan kalitsiz ishlaydi; `GEMINI_API_KEY` qo'shilsa, javoblar sifatliroq bo'ladi va Gemini ovozida o'qiladi. Ishlash tartibi:
-1. Respondent mikrofon tugmasini bosib gapiradi (bir yozuv 60 soniyagacha). Yozuv brauzerda 16 kHz WAV formatiga aylantiriladi.
-2. Server (`/api/voice`) nutqni Cloudflare'ning Whisper modeli (`@cf/openai/whisper-large-v3-turbo`) bilan o'zbekcha matnga aylantiradi (odatda 1–3 soniya).
-3. Matnga KXT asosidagi qisqa javob olinadi: avval `AI_PROVIDER` dagi provayder, u xato bersa yoki 30 soniyada javob bermasa — boshqasi (Gemini ↔ Workers AI).
-4. Javob ekranda ko'rinadi va Gemini ovozida o'qiladi. Gemini ovozi ishlamasa, brauzerning o'z ovozi ishlatiladi.
-5. Whisper ishlamasa, audio to'g'ridan-to'g'ri Gemini'ga yuboriladi (sekinroq zaxira yo'l). `VOICE_STT = "gemini"` qatori bilan shu yo'lni asosiy qilish mumkin.
-6. Matnga aylantirilgan gapda xavf belgilari bo'lsa, yordam raqamlari ko'rsatiladi va (rozilik bo'lsa) psixologga signal yuboriladi.
+«Suhbatdosh» bo'limidagi «Ovozli suhbat» rejimi `GEMINI_API_KEY` bo'lsa ishlaydi:
+1. Respondent mikrofon tugmasini bosib gapiradi (bir yozuv 60 soniyagacha); gapni tugatib 1,2 soniya jim qolganda yozuv avtomatik yuboriladi. Yozuv brauzerda 16 kHz WAV formatiga aylantiriladi.
+2. Server (`/api/voice`) audioni Gemini'ga yuboradi: bitta so'rovda nutq o'zbekcha matnga aylantiriladi va KXT asosida qisqa javob tayyorlanadi. Tezlik uchun tez «lite» modeli (`GEMINI_VOICE_MODEL`) ishlatiladi va «o'ylash» bosqichi o'chiriladi.
+3. Javob matni darhol ekranda ko'rinadi, so'ng Gemini ovozida o'qiladi. Gemini ovozi ishlamasa, brauzerning o'z ovozi ishlatiladi.
+4. Matnga aylantirilgan gapda xavf belgilari bo'lsa, yordam raqamlari ko'rsatiladi va (rozilik bo'lsa) psixologga signal yuboriladi.
 
-**Tezlik.** Ovozli suhbat tezroq ishlashi uchun:
-- yozuv respondent gapni tugatib 1,2 soniya jim qolganda avtomatik yuboriladi (o'chirib qo'yish mumkin);
-- Gemini'ning «o'ylash» bosqichi minimal darajaga tushiriladi: model bir shaklni rad etsa, boshqa shakli (`thinkingBudget: 0`) sinaladi;
-- har bir Gemini so'roviga vaqt chegarasi qo'yiladi (`GEMINI_TIMEOUT_MS`, standart 25 soniya): model javob bermasa, ro'yxatdagi boshqa flash yoki lite modeliga o'tiladi va tez ishlagan model eslab qolinadi;
-- javob matni va ovoz bitta so'rovda oqim bilan keladi: matn darhol ko'rinadi, ovoz tayyor bo'lishi bilan o'qiladi;
-- avtomatik topilgan model bazada saqlanadi va qayta qidirilmaydi;
-- har navbatdan keyin «Oxirgi navbat: javob … s · ovoz … s» va (kechikish bo'lsa) qaysi model qancha vaqt olgani ko'rsatiladi; `/api/gemini` sahifasida oxirgi urinishlar izi ham bor.
+Har navbatdan keyin «Oxirgi navbat: javob … s · ovoz … s» qatori ko'rinadi; xato bo'lsa, qaysi model qanday xato bergani yoziladi. Ovoz sekin bo'lsa, «Javoblarni ovoz bilan o'qish» belgisini olib tashlang (javob brauzer ovozida darhol o'qiladi).
 
-Ovoz hali ham sekin bo'lsa, «Javoblarni ovoz bilan o'qish» belgisini olib tashlang (javob brauzer ovozida darhol o'qiladi).
+Birinchi ishlatishdan oldin respondentga ovoz Google'ga yuborilishi haqida ogohlantirish ko'rsatiladi. Audio platformada saqlanmaydi.
 
-**Matnli suhbatda ham zaxira bor.** `/api/ai` avval tanlangan provayderni, xato bo'lsa boshqasini sinaydi; javobdagi `tried` maydoni va sahifadagi xato xabari qaysi provayder qanday xato berganini ko'rsatadi.
-
-Birinchi ishlatishdan oldin respondentga ovoz Google'ga yuborilishi haqida ogohlantirish ko'rsatiladi. Audio platformada saqlanmaydi. Ovoz modeli va ovoz nomi `wrangler.toml` dagi `GEMINI_TTS_MODEL` va `GEMINI_TTS_VOICE` qatorlarida o'zgartiriladi.
-
-**Maxfiylik bo'yicha muhim eslatma.** Google'ning bepul tarif shartlariga ko'ra, bepul Gemini API'ga yuborilgan ma'lumotlar Google mahsulotlarini yaxshilash uchun ishlatilishi mumkin. Respondentlarning kundalik yozuvlari va suhbatlari sezgir psixologik ma'lumot bo'lgani uchun, haqiqiy tadqiqotda Workers AI yoki pullik tarifni tanlang yoki rozilik matnida buni respondentlarga aniq ayting.
+**Maxfiylik bo'yicha muhim eslatma.** Google'ning bepul tarif shartlariga ko'ra, bepul Gemini API'ga yuborilgan ma'lumotlar Google mahsulotlarini yaxshilash uchun ishlatilishi mumkin. Respondentlarning yozuvlari sezgir psixologik ma'lumot bo'lgani uchun, haqiqiy tadqiqotda pullik tarifni (billing ulangan loyiha) tanlang yoki rozilik matnida buni respondentlarga aniq ayting.
 
 ### Sozlamalar
 | O'zgaruvchi | Vazifasi | Standart qiymat |
 |---|---|---|
-| `AI_PROVIDER` | `workers-ai`, `gemini` yoki `anthropic`; bo'sh bo'lsa, mavjud kalitga qarab tanlanadi | `workers-ai` |
-| `WORKERS_AI_MODEL` | Workers AI modeli | `@cf/google/gemma-3-12b-it` |
-| `GEMINI_MODEL` | Gemini modeli. Topilmasa, kalit uchun mavjud modellardan eng mos «flash» modeli avtomatik tanlanadi | `gemini-flash-latest` |
-| `ANTHROPIC_MODEL` | Claude modeli | `claude-opus-5-5` |
-| `GEMINI_VOICE_MODEL` | Ovozli suhbat uchun alohida model (ixtiyoriy, masalan tezroq `gemini-flash-lite-latest`) | `GEMINI_MODEL` bilan bir xil |
-| `GEMINI_TTS_MODEL` | Javoblarni o'qiydigan Gemini ovoz modeli (topilmasa, mavjud TTS modeli avtomatik tanlanadi) | `gemini-2.5-flash-preview-tts` |
+| `GEMINI_MODEL` | Matnli suhbat modeli. Topilmasa yoki band bo'lsa, `gemini-flash-lite-latest`, `gemini-2.5-flash`, `gemini-2.5-flash-lite` sinaladi | `gemini-flash-latest` |
+| `GEMINI_VOICE_MODEL` | Ovozli suhbat modeli | `gemini-flash-lite-latest` |
+| `GEMINI_TTS_MODEL` | Javoblarni o'qiydigan ovoz modeli | `gemini-2.5-flash-preview-tts` |
 | `GEMINI_TTS_VOICE` | Gemini ovozi nomi | `Kore` |
-| `WHISPER_MODEL` | Nutqni matnga aylantiruvchi Workers AI modeli | `@cf/openai/whisper-large-v3-turbo` |
-| `VOICE_STT` | `whisper` (tez, standart) yoki `gemini` (audio Gemini'ga yuboriladi) | `whisper` |
+| `GEMINI_TIMEOUT_MS` | Bitta javobni kutish chegarasi (millisekund) | `30000` |
 | `AI_DAILY_LIMIT` | Har bir respondentning kunlik AI so'rovlari soni (ovozli navbat 2 ta so'rov hisoblanadi) | `60` |
 | `AI_DAILY_LIMIT_IP` | Bitta IP manzildan kunlik AI so'rovlari (auditoriya bitta IP orqali chiqishi mumkin) | `1500` |
 
@@ -125,7 +117,7 @@ Bu qiymatlar `wrangler.toml` da saqlanadi va har bir deploy'da qo'llanadi; ularn
 ### Mahalliy ishga tushirish
 ```bash
 cp .dev.vars.example .dev.vars   # kalitlarni kiriting
-npx wrangler login               # Workers AI har doim Cloudflare serverlarida ishlaydi
+npx wrangler login
 npm run dev                      # http://localhost:8787
 ```
 
@@ -158,11 +150,11 @@ Birinchi kirishda platforma «Respondent» yoki «Tadqiqotchi» rolini tanlashni
 | `GET /api/studies`, `PUT/DELETE /api/studies/:id` | tadqiqotchi | Tadqiqotlarni boshqarish |
 | `GET /api/panel`, `GET/PATCH /api/panel/:id` | tadqiqotchi | Respondentlar ma'lumotlari, xavf signalini ko'rib chiqish |
 | `POST /api/auth` | tadqiqotchi | Kalitni tekshirish |
-| `POST /api/ai` | respondent | AI so'rovi (tanlangan provayder orqali) |
+| `POST /api/ai` | respondent | Matnli AI so'rovi (Gemini) |
 | `GET /api/limits` | hamma | Kunlik AI limiti: respondent o'z hisobini, tadqiqotchi barcha xizmatlar bo'yicha hisobni ko'radi |
-| `POST /api/voice` | respondent | Ovozli navbat: audio → matn (Whisper) → javob (Gemini/Workers AI) → ovoz |
+| `POST /api/voice` | respondent | Ovozli navbat: audio → matn va javob (Gemini) → Gemini ovozi |
 | `POST /api/tts` | respondent | Javob matnini Gemini ovozida o'qish |
-| `GET /api/gemini` | hamma | Tekshiruv: kalit uchun mavjud Gemini modellari va platforma ishlatayotgan modellar |
+| `GET /api/gemini` | hamma | Gemini tekshiruvi: sinov so'rovi natijasi, Google xato matni, mavjud modellar |
 
 Tadqiqotchi so'rovlari `Authorization: Bearer <PSY_TOKEN>` sarlavhasini talab qiladi.
 
