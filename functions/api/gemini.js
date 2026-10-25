@@ -1,4 +1,4 @@
-import { HttpError, geminiResolved, handle, json, listGeminiModels, pickGeminiModels } from "../../server/lib.js";
+import { HttpError, geminiDiagnostics, handle, json, listGeminiModels, pickGeminiModels } from "../../server/lib.js";
 
 // Tekshiruv sahifasi: kalit uchun mavjud Gemini modellari va platforma tanlagan modellar (maxfiy ma'lumot qaytarmaydi)
 export const onRequestGet = handle(async ({ env }) => {
@@ -6,7 +6,7 @@ export const onRequestGet = handle(async ({ env }) => {
   const models = await listGeminiModels(env);
   return json({
     configured: { chat: env.GEMINI_MODEL || null, voice: env.GEMINI_VOICE_MODEL || env.GEMINI_MODEL || null, tts: env.GEMINI_TTS_MODEL || null },
-    inUse: geminiResolved(),
+    ...geminiDiagnostics(),
     candidates: { chat: pickGeminiModels(models, "chat").slice(0, 6), tts: pickGeminiModels(models, "tts").slice(0, 6) },
     available: models.length,
   });

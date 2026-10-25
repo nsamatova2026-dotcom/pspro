@@ -89,10 +89,11 @@ Bepul limit tugasa, platforma AI so'rovlariga «Bugungi limit tugadi» deb javob
 
 **Tezlik.** Ovozli suhbat tezroq ishlashi uchun:
 - yozuv respondent gapni tugatib 1,2 soniya jim qolganda avtomatik yuboriladi (o'chirib qo'yish mumkin);
-- Gemini'ning «o'ylash» bosqichi minimal darajaga tushiriladi (model buni qabul qilmasa, parametrsiz qayta yuboriladi);
+- Gemini'ning «o'ylash» bosqichi minimal darajaga tushiriladi: model bir shaklni rad etsa, boshqa shakli (`thinkingBudget: 0`) sinaladi;
+- har bir Gemini so'roviga vaqt chegarasi qo'yiladi (`GEMINI_TIMEOUT_MS`, standart 25 soniya): model javob bermasa, ro'yxatdagi boshqa flash yoki lite modeliga o'tiladi va tez ishlagan model eslab qolinadi;
 - javob matni va ovoz bitta so'rovda oqim bilan keladi: matn darhol ko'rinadi, ovoz tayyor bo'lishi bilan o'qiladi;
 - avtomatik topilgan model bazada saqlanadi va qayta qidirilmaydi;
-- har navbatdan keyin «Oxirgi navbat: javob … s · ovoz … s» ko'rsatiladi.
+- har navbatdan keyin «Oxirgi navbat: javob … s · ovoz … s» va (kechikish bo'lsa) qaysi model qancha vaqt olgani ko'rsatiladi; `/api/gemini` sahifasida oxirgi urinishlar izi ham bor.
 
 Ovoz hali ham sekin bo'lsa, `wrangler.toml` da `GEMINI_VOICE_MODEL = "gemini-flash-lite-latest"` qatorini yoqing (tezroq, lekin nutqni tushunish biroz sustroq bo'lishi mumkin) yoki «Javoblarni ovoz bilan o'qish» belgisini olib tashlang.
 

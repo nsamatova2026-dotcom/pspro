@@ -36,18 +36,18 @@ export const onRequestPost = handle(async ({ request, env, waitUntil = (p) => p 
 
   const schema = { type: "OBJECT", properties: { transcript: { type: "STRING" }, reply: { type: "STRING" } }, required: ["transcript", "reply"] };
   const t0 = Date.now();
-  const { cand, model } = await geminiGenerate(env, "voice", (model, plain) => ({
+  const { cand, model, trace } = await geminiGenerate(env, "voice", (model, variant) => ({
     systemInstruction: { parts: [{ text: VOICE_SYSTEM }] },
     contents: [...history, { role: "user", parts: [{ inlineData: { mimeType: body.mime, data: body.audio } }, { text: "Bu foydalanuvchining navbatdagi gapi." }] }],
     generationConfig: {
       maxOutputTokens: 1024, responseMimeType: "application/json", responseSchema: schema,
-      ...thinkingFor(model, plain),
+      ...thinkingFor(model, variant),
     },
   }));
   const raw = (cand.content?.parts || []).map((p) => p.text || "").join("");
   let out;
   try { out = JSON.parse(raw); } catch { throw new HttpError(502, "bad_json"); }
-  const result = { type: "text", transcript: String(out.transcript || "").trim(), reply: String(out.reply || "").trim(), model, ms: Date.now() - t0 };
+  const result = { type: "text", transcript: String(out.transcript || "").trim(), reply: String(out.reply || "").trim(), model, ms: Date.now() - t0, trace };
   if (!body.speak || !result.reply) return json(result);
 
   // Oqimli javob (NDJSON): matn darhol yuboriladi, ovoz tayyor bo'lgach ikkinchi qator bo'lib keladi

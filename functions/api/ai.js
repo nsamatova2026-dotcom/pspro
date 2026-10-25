@@ -40,10 +40,10 @@ const PROVIDERS = {
 
   // Google Gemini API: GEMINI_API_KEY (Google AI Studio'da bepul olinadi); model topilmasa avtomatik tanlanadi
   async gemini(env, messages) {
-    const { cand } = await geminiGenerate(env, "chat", (model, plain) => ({
+    const { cand } = await geminiGenerate(env, "chat", (model, variant) => ({
       systemInstruction: { parts: [{ text: SYSTEM }] },
       contents: messages.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
-      generationConfig: { maxOutputTokens: MAX_OUTPUT, ...thinkingFor(model, plain) },
+      generationConfig: { maxOutputTokens: MAX_OUTPUT, ...thinkingFor(model, variant) },
     }), "ai_not_configured");
     const text = (cand.content?.parts || []).map((p) => p.text || "").join("");
     if (!text) throw new HttpError(502, "ai_unavailable");

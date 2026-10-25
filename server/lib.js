@@ -168,13 +168,20 @@ export async function checkRateLimit(env, request, cost = 1) {
 
 // Gemini API so'rovi: xatolarni platformaning umumiy kodlariga aylantiradi
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta";
-export async function callGemini(env, model, body, notConfigured = "voice_not_configured") {
+export async function callGemini(env, model, body, notConfigured = "voice_not_configured", timeoutMs = 0) {
   if (!env.GEMINI_API_KEY) throw new HttpError(503, notConfigured);
-  const r = await fetch(`${GEMINI_BASE}/models/${encodeURIComponent(model)}:generateContent`, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-    body: JSON.stringify(body),
-  });
+  let r;
+  try {
+    r = await fetch(`${GEMINI_BASE}/models/${encodeURIComponent(model)}:generateContent`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+      body: JSON.stringify(body),
+      ...(timeoutMs ? { signal: AbortSignal.timeout(timeoutMs) } : {}),
+    });
+  } catch (e) {
+    if (e?.name === "TimeoutError" || e?.name === "AbortError") throw new HttpError(504, "timeout");
+    throw e;
+  }
   if (r.status === 429) throw new HttpError(429, "rate_limited");
   if (!r.ok) {
     const text = (await r.text()).slice(0, 800);
@@ -193,7 +200,7 @@ export async function callGemini(env, model, body, notConfigured = "voice_not_co
 }
 
 // Kalit uchun mavjud Gemini modellari (1 soat keshlanadi)
-const geminiState = { models: null, at: 0, resolved: {} };
+const geminiState = { models: null, at: 0, resolved: {}, trace: {}, slow: {} };
 export async function listGeminiModels(env) {
   if (geminiState.models && Date.now() - geminiState.at < 3600e3) return geminiState.models;
   const out = [];
@@ -214,10 +221,11 @@ export async function listGeminiModels(env) {
 export function pickGeminiModels(models, kind) {
   const ok = models.filter((m) => m.methods.includes("generateContent") && /^gemini-/.test(m.name));
   const isTts = (n) => /tts/.test(n);
-  let list = kind === "tts"
-    ? ok.filter((m) => isTts(m.name))
-    : ok.filter((m) => !isTts(m.name) && /flash/.test(m.name) && !/image|live|embed|native-audio|computer|robotics|lite/.test(m.name));
-  if (!list.length && kind !== "tts") list = ok.filter((m) => !isTts(m.name) && !/image|live|embed|native-audio|computer|robotics/.test(m.name));
+  const notSpecial = (n) => !/image|live|embed|native-audio|computer|robotics/.test(n);
+  let list = kind === "tts" ? ok.filter((m) => isTts(m.name))
+    : kind === "lite" ? ok.filter((m) => !isTts(m.name) && /flash-lite/.test(m.name) && notSpecial(m.name))
+    : ok.filter((m) => !isTts(m.name) && /flash/.test(m.name) && !/lite/.test(m.name) && notSpecial(m.name));
+  if (!list.length && kind === "chat") list = ok.filter((m) => !isTts(m.name) && notSpecial(m.name));
   const version = (n) => parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/) || [])[1] || "0");
   const unstable = (n) => (/preview|exp/.test(n) ? 1 : 0);
   return list
@@ -225,14 +233,20 @@ export function pickGeminiModels(models, kind) {
     .sort((a, b) => (/-latest$/.test(b) - /-latest$/.test(a)) || version(b) - version(a) || (/flash/.test(b) - /flash/.test(a)) || unstable(a) - unstable(b) || a.length - b.length);
 }
 
-// «O'ylash» sozlamasi: 2.5 flash'da o'chiriladi, yangi modellarda minimal darajaga tushiriladi (javob ancha tezlashadi).
-// plain=true bo'lsa yuborilmaydi (model bu parametrni qabul qilmasa, qayta urinish uchun).
-export function thinkingFor(model, plain) {
-  if (plain) return {};
-  if (/2\.5-flash/.test(model)) return { thinkingConfig: { thinkingBudget: 0 } };
-  if (/2\.5|2\.0|1\.5/.test(model)) return {};
-  return { thinkingConfig: { thinkingLevel: /flash/.test(model) ? "minimal" : "low" } };
+// «O'ylash» sozlamasi variantlari. Model biror shaklni rad etsa (400), keyingisi sinaladi:
+// yangi modellar: thinkingLevel → thinkingBudget: 0 → parametrsiz; 2.5 avlodi: thinkingBudget: 0 → parametrsiz.
+export function thinkingFor(model, variant = 0) {
+  if (variant === true) variant = 9;
+  if (variant === false) variant = 0;
+  if (/(^|-)(1\.5|2\.0)-/.test(model)) return {};
+  const level = { thinkingConfig: { thinkingLevel: /flash/.test(model) ? "minimal" : "low" } };
+  const budget = { thinkingConfig: { thinkingBudget: /pro/.test(model) ? 128 : 0 } };
+  const order = /2\.5/.test(model) ? [budget, {}] : [level, budget, {}];
+  return order[Math.min(variant, order.length - 1)];
 }
+const thinkingVariants = (model) => (/(^|-)(1\.5|2\.0)-/.test(model) ? 1 : /2\.5/.test(model) ? 2 : 3);
+const thinkingLabel = (cfg) => cfg.thinkingConfig?.thinkingLevel ? "o'ylash: " + cfg.thinkingConfig.thinkingLevel
+  : cfg.thinkingConfig && "thinkingBudget" in cfg.thinkingConfig ? "o'ylash: " + cfg.thinkingConfig.thinkingBudget : "standart";
 
 const MODEL_KEYS = { chat: "gemini_chat", voice: "gemini_voice", tts: "gemini_tts" };
 async function loadResolved(env) {
@@ -258,43 +272,57 @@ async function saveResolved(env, kind, model) {
   } catch (e) { console.error("Modelni saqlab bo'lmadi:", e?.message || e); }
 }
 
-// Gemini'ga so'rov: sozlamadagi model topilmasa, mavjud modellardan mosini avtomatik tanlaydi va bazada eslab qoladi.
-// tune(model, plain) — model nomiga qarab so'rov tanasini tayyorlaydi.
+// Gemini'ga so'rov. Har bir urinishga vaqt chegarasi qo'yiladi; model topilmasa, parametrni rad etsa yoki juda sekin bo'lsa,
+// keyingi nomzodga o'tiladi (sozlamadagi → gemini-flash-latest → ro'yxatdagi flash → lite). Tez ishlagan model bazada saqlanadi.
+// tune(model, variant) — so'rov tanasi; natija: { cand, model, trace }.
 export async function geminiGenerate(env, kind, tune, notConfigured = "voice_not_configured") {
   if (!env.GEMINI_API_KEY) throw new HttpError(503, notConfigured);
   await loadResolved(env);
+  const timeoutMs = Number(kind === "tts" ? env.GEMINI_TTS_TIMEOUT_MS || 40000 : env.GEMINI_TIMEOUT_MS || 25000);
   const configured = kind === "tts" ? env.GEMINI_TTS_MODEL || "gemini-2.5-flash-preview-tts"
     : kind === "voice" ? env.GEMINI_VOICE_MODEL || env.GEMINI_MODEL || "gemini-flash-latest"
     : env.GEMINI_MODEL || "gemini-flash-latest";
-  const tried = new Set();
+  const started = Date.now(), tried = new Set(), trace = [];
+  geminiState.slow ??= {};
   let lastErr = null;
   const attempt = async (model) => {
-    if (!model || tried.has(model)) return null;
+    if (!model || tried.has(model) || Date.now() - started > 70000) return null;
     tried.add(model);
-    for (const plain of [false, true]) {
+    const variants = kind === "tts" ? 1 : thinkingVariants(model);
+    for (let v = 0; v < variants; v++) {
+      const body = tune(model, v), t = Date.now();
       try {
-        const cand = await callGemini(env, model, tune(model, plain), notConfigured);
+        const cand = await callGemini(env, model, body, notConfigured, timeoutMs);
+        trace.push({ model, think: thinkingLabel(body.generationConfig || {}), result: "ok", ms: Date.now() - t });
+        delete geminiState.slow[model];
         await saveResolved(env, kind, model);
         return { cand, model };
       } catch (e) {
         if (!(e instanceof HttpError)) throw e;
-        if (e.code === "bad_request" && !plain) continue; // parametrsiz qayta urinish
-        if (e.code === "model_not_found" || e.code === "bad_request") { lastErr = e; return null; }
+        trace.push({ model, think: thinkingLabel(body.generationConfig || {}), result: e.code, ms: Date.now() - t });
+        if (e.code === "bad_request" && v < variants - 1) continue; // boshqa «o'ylash» shakli bilan qayta urinish
+        if (e.code === "timeout") geminiState.slow[model] = Date.now() + 10 * 60e3;
+        if (["model_not_found", "bad_request", "timeout"].includes(e.code)) { lastErr = e; return null; }
         throw e;
       }
     }
     return null;
   };
-  for (const m of [geminiState.resolved[kind], configured, kind === "tts" ? null : "gemini-flash-latest"]) {
+  const isSlow = (m) => (geminiState.slow[m] || 0) > Date.now();
+  const first = [geminiState.resolved[kind], configured, kind === "tts" ? null : "gemini-flash-latest"].filter(Boolean);
+  for (const m of [...first.filter((m) => !isSlow(m))]) {
     const res = await attempt(m);
-    if (res) return res;
+    if (res) { geminiState.trace[kind] = trace; return { ...res, trace }; }
   }
   let models = [];
   try { models = await listGeminiModels(env); } catch (e) { console.error("Gemini modellar ro'yxatini olib bo'lmadi:", e?.message || e); }
-  for (const m of pickGeminiModels(models, kind === "tts" ? "tts" : "chat").slice(0, 4)) {
+  const pool = kind === "tts" ? pickGeminiModels(models, "tts").slice(0, 4)
+    : [...pickGeminiModels(models, "chat").slice(0, 3), ...pickGeminiModels(models, "lite").slice(0, 2)];
+  for (const m of [...pool.filter((m) => !isSlow(m)), ...first.filter(isSlow)]) {
     const res = await attempt(m);
-    if (res) return res;
+    if (res) { geminiState.trace[kind] = trace; return { ...res, trace }; }
   }
+  geminiState.trace[kind] = trace;
   throw lastErr || new HttpError(502, "model_not_found");
 }
 
@@ -312,3 +340,4 @@ export async function synthesize(env, text) {
   return { audio: part.inlineData.data, mime: part.inlineData.mimeType || "audio/L16;rate=24000" };
 }
 export const geminiResolved = () => ({ ...geminiState.resolved });
+export const geminiDiagnostics = () => ({ inUse: { ...geminiState.resolved }, lastTrace: { ...geminiState.trace }, slowUntil: { ...geminiState.slow } });

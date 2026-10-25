@@ -642,6 +642,7 @@ body[data-role=""] #nav, body[data-role=""] #roleSeg { display: none; }
             </div>
             <p class="note">Tugmani bosing va gapiring. Gapni tugatib bir lahza jim qolsangiz, yozuv o'zi yuboriladi (yoki tugmani yana bosing). Bir yozuv 60 soniyagacha.</p>
             <p class="note num" id="voiceTiming" aria-live="polite"></p>
+            <p class="note num" id="voiceTrace" style="max-width:60ch;overflow-wrap:anywhere"></p>
           </div>
         </div>
         <p class="note" id="chatNote">Suhbat sizning Claude hisobingiz orqali ishlaydi; birinchi xabarda ruxsat so'raladi. Suhbat hech qayerda saqlanmaydi.</p>
@@ -1309,6 +1310,10 @@ async function onRecordingStop() {
     // Umumiy vaqt va qavs ichida Gemini'ning o'zi sarflagan vaqt: farqi internet va yozuvni tayyorlashga ketgan vaqt
     const timing = [`javob ${sec(tText - t0)}${first.ms ? ` (Gemini ${sec(first.ms)}${first.model ? ", " + first.model : ""})` : ""}`];
     $("#voiceTiming").textContent = "Oxirgi navbat: " + timing.join(" · ");
+    // Bir nechta urinish bo'lsa yoki javob kechiksa, qaysi model qancha vaqt olgani ko'rsatiladi
+    const tr = first.trace || [], why = { timeout: "vaqt tugadi", bad_request: "parametr rad etildi", model_not_found: "topilmadi", rate_limited: "limit" };
+    $("#voiceTrace").textContent = tr.length > 1 || (first.ms || 0) > 8000
+      ? "Urinishlar: " + tr.map(x => `${x.model} (${x.think}) ${x.result === "ok" ? "" : (why[x.result] || x.result) + ", "}${sec(x.ms)}`).join(" → ") : "";
     if (!reply || !speakIt) { setVoiceState("Gapirish uchun tugmani bosing"); return; }
     setVoiceState("Ovoz tayyorlanmoqda · gapirish uchun tugmani bosing");
     const audio = await stream.next().catch(() => null);
