@@ -1305,13 +1305,15 @@ async function onRecordingStop() {
     if (reply) addMsg("bot", reply);
     if (transcript && reply) { turns.push({ role: "user", content: transcript }, { role: "assistant", content: reply }); countChatSession(); }
     voiceBusy = false;
-    const timing = [`javob ${((tText - t0) / 1000).toFixed(1)} s`];
+    const sec = ms => (ms / 1000).toFixed(1) + " s";
+    // Umumiy vaqt va qavs ichida Gemini'ning o'zi sarflagan vaqt: farqi internet va yozuvni tayyorlashga ketgan vaqt
+    const timing = [`javob ${sec(tText - t0)}${first.ms ? ` (Gemini ${sec(first.ms)}${first.model ? ", " + first.model : ""})` : ""}`];
     $("#voiceTiming").textContent = "Oxirgi navbat: " + timing.join(" · ");
     if (!reply || !speakIt) { setVoiceState("Gapirish uchun tugmani bosing"); return; }
     setVoiceState("Ovoz tayyorlanmoqda · gapirish uchun tugmani bosing");
     const audio = await stream.next().catch(() => null);
     if (turn !== voiceTurn || rec) return; // respondent yangi gap boshlagan
-    timing.push(`ovoz ${((performance.now() - tText) / 1000).toFixed(1)} s`);
+    timing.push(`ovoz ${sec(performance.now() - tText)}${audio?.ms ? ` (Gemini ${sec(audio.ms)})` : ""}`);
     $("#voiceTiming").textContent = "Oxirgi navbat: " + timing.join(" · ") + (audio?.type === "audio" ? "" : " (brauzer ovozi)");
     setVoiceState("Javob o'qilmoqda · gapirish uchun tugmani bosing");
     if (audio?.type === "audio") await playPcm(audio.audio, audio.mime); else await speakBrowser(reply);
